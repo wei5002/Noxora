@@ -6,16 +6,16 @@ import pool from "../db.js";
 export const changePassword = async (req, res) => {
   try {
     const { user_id } = req.params;
-    const { oldPassword, newPassword, confirmPassword } = req.body;
+    const { newPassword, confirmPassword } = req.body;
 
     // Cek data wajib
-    if (!oldPassword || !newPassword || !confirmPassword) {
+    if (!newPassword || !confirmPassword) {
       return res.status(400).json({
-        message: "Semua password wajib diisi",
+        message: "Password baru dan konfirmasi password wajib diisi",
       });
     }
 
-    // Password baru minimal 8 karakter
+    // Password minimal 8 karakter
     if (newPassword.length < 8) {
       return res.status(400).json({
         message: "Password baru minimal 8 karakter",
@@ -37,7 +37,6 @@ export const changePassword = async (req, res) => {
       [user_id],
     );
 
-    // User tidak ditemukan
     if (result.rows.length === 0) {
       return res.status(404).json({
         message: "User tidak ditemukan",
@@ -46,12 +45,12 @@ export const changePassword = async (req, res) => {
 
     const user = result.rows[0];
 
-    // Cek password lama
-    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    // Cek apakah password baru sama dengan password sebelumnya
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
 
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        message: "Password lama salah",
+    if (isSamePassword) {
+      return res.status(400).json({
+        message: "Password baru tidak boleh sama dengan password sebelumnya",
       });
     }
 
@@ -77,7 +76,6 @@ export const changePassword = async (req, res) => {
     });
   }
 };
-
 // FORGOT PASSWORD
 export const forgotPassword = async (req, res) => {
   try {

@@ -165,6 +165,15 @@ export const login = async (req, res) => {
       });
     }
 
+    // Cek password baru tidak boleh sama dengan password lama
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+
+    if (isSamePassword) {
+      return res.status(400).json({
+        message: "Password baru tidak boleh sama dengan password sebelumnya",
+      });
+    }
+    
     // Login berhasil
     res.status(200).json({
       message: "Login berhasil",

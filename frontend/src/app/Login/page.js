@@ -8,23 +8,36 @@ import { useRouter } from "next/navigation";
 export default function Login() {
   const router = useRouter();
 
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
-    // Ambil data user yang disimpan saat Sign Up
-    const storedUser = localStorage.getItem("user");
-
-    if (!storedUser) {
-      alert("Akun belum terdaftar. Silakan Sign Up terlebih dahulu.");
+  const handleLogin = async () => {
+    if (!email || !password) {
+      alert("Email dan password wajib diisi.");
       return;
     }
 
-    const user = JSON.parse(storedUser);
+    try {
+      const response = await fetch("http://localhost:5000/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
-    // Cek username dan password
-    if (username === user.username && password === user.password) {
-      // Tandai bahwa user sudah login
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Login gagal.");
+        return;
+      }
+
+      // Simpan data user yang berhasil login
+      localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("isLoggedIn", "true");
 
       window.dispatchEvent(new Event("login"));
@@ -32,8 +45,9 @@ export default function Login() {
       alert("Login berhasil!");
 
       router.push("/");
-    } else {
-      alert("Username atau password salah.");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Tidak dapat terhubung ke server.");
     }
   };
 
@@ -48,24 +62,27 @@ export default function Login() {
         direction={"column"}
         gap={"2vh"}
         borderRadius={"2vh"}
-        justify={"center"}>
+        justify={"center"}
+      >
         {/* Header */}
         <Flex
           w={"100%"}
           justify={"center"}
           borderBottom={"1px solid #dfdddd"}
-          pb={"0.5vh"}>
+          pb={"0.5vh"}
+        >
           <Text fontWeight={"bold"} fontSize={"xl"}>
             Login
           </Text>
         </Flex>
 
-        {/* Username */}
+        {/* Email */}
         <Flex
           direction={{ base: "column", sm: "row" }}
           align={"center"}
-          justify={"space-between"}>
-          <Text w={{ base: "100%", sm: "30vh" }}>Username</Text>
+          justify={"space-between"}
+        >
+          <Text w={{ base: "100%", sm: "30vh" }}>Email</Text>
 
           <Input
             bg={"bg.input"}
@@ -73,9 +90,9 @@ export default function Login() {
             _placeholder={{ color: "#5f5d5d" }}
             h={"4vh"}
             w={"100%"}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder={"Masukkan Username..."}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={"Masukkan Email..."}
           />
         </Flex>
 
@@ -83,7 +100,8 @@ export default function Login() {
         <Flex
           direction={{ base: "column", sm: "row" }}
           align="center"
-          justify="space-between">
+          justify="space-between"
+        >
           <Text w={{ base: "100%", sm: "29vh" }}>Password</Text>
 
           <PasswordInput
@@ -107,7 +125,8 @@ export default function Login() {
             _hover={{
               textDecoration: "underline",
             }}
-            onClick={() => router.push("/ForgotPassword")}>
+            onClick={() => router.push("/ForgotPassword")}
+          >
             Forgot Password?
           </Text>
         </Flex>
@@ -129,7 +148,8 @@ export default function Login() {
               bg: "hover.primary",
             }}
             borderRadius={"4vh"}
-            onClick={handleLogin}>
+            onClick={handleLogin}
+          >
             Login
           </Button>
           <Flex direction="row" gap={"1"}>
@@ -143,7 +163,8 @@ export default function Login() {
               _hover={{
                 textDecoration: "underline",
               }}
-              onClick={() => router.push("/Register")}>
+              onClick={() => router.push("/Register")}
+            >
               Sign up
             </Text>
           </Flex>

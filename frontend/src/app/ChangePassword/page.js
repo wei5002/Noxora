@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Flex, Input, Text } from "@chakra-ui/react";
+import { Button, Flex, Text } from "@chakra-ui/react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ export default function ChangePassword() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     // Ambil data user
     const storedUser = localStorage.getItem("user");
 
@@ -23,36 +23,58 @@ export default function ChangePassword() {
 
     const user = JSON.parse(storedUser);
 
-    // Cek password baru tidak boleh kosong
+    // Cek password baru
     if (!newPassword) {
-      alert("New password harus diisi.");
+      alert("Password baru harus diisi.");
+      return;
+    }
+
+    // Password minimal 8 karakter
+    if (newPassword.length < 8) {
+      alert("Password baru minimal 8 karakter.");
       return;
     }
 
     // Cek konfirmasi password
+    if (!confirmPassword) {
+      alert("Confirm new password harus diisi.");
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       alert("Confirm new password tidak sama.");
       return;
     }
 
-    // Cek password baru berbeda dengan password lama
-    if (newPassword === user.password) {
-      alert("Password baru harus berbeda dengan password lama.");
-      return;
+    try {
+      const response = await fetch(
+        `http://localhost:5000/change-password/${user.user_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            newPassword,
+            confirmPassword,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Gagal mengubah password.");
+        return;
+      }
+
+      alert("Password berhasil diubah.");
+
+      router.push("/Profile");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Tidak dapat terhubung ke server.");
     }
-
-    // Update password
-    const updatedUser = {
-      ...user,
-      password: newPassword,
-    };
-
-    localStorage.setItem("user", JSON.stringify(updatedUser));
-
-    alert("Password berhasil diubah.");
-
-    // Kembali ke Profile
-    router.push("/Profile");
   };
 
   return (
@@ -66,13 +88,15 @@ export default function ChangePassword() {
         direction="column"
         gap="2vh"
         borderRadius="2vh"
-        justify="center">
+        justify="center"
+      >
         {/* Header */}
         <Flex
           borderBottom="1px solid #d6d1d1"
           pb="0.5vh"
           align="center"
-          justify="center">
+          justify="center"
+        >
           <Text fontWeight="bold" fontSize="xl">
             Change Password
           </Text>
@@ -116,7 +140,8 @@ export default function ChangePassword() {
             align="center"
             direction="column"
             gap="1vh"
-            mt="1vh">
+            mt="1vh"
+          >
             <Button
               w="30vh"
               fontWeight="bold"
@@ -125,7 +150,8 @@ export default function ChangePassword() {
                 bg: "hover.primary",
               }}
               borderRadius="4vh"
-              onClick={handleChangePassword}>
+              onClick={handleChangePassword}
+            >
               Save Password
             </Button>
           </Flex>

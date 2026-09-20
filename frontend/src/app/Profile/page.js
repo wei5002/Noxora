@@ -13,7 +13,7 @@ export default function Profile() {
   const [email, setEmail] = useState("");
   const [telp, setTelp] = useState("");
 
-  // Ambil data user dari localStorage
+  // GET PROFILE
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
 
@@ -24,41 +24,44 @@ export default function Profile() {
 
     const user = JSON.parse(storedUser);
 
-    setUsername(user.username || "");
-    setEmail(user.email || "");
-    setTelp(user.telp || "-");
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/profile/${user.user_id}`,
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          alert(data.message || "Gagal mengambil data profile.");
+          return;
+        }
+
+        setUsername(data.user.username || "");
+        setEmail(data.user.email || "");
+        setTelp(data.user.phoneNumber || "");
+
+        // Simpan data terbaru ke localStorage
+        localStorage.setItem("user", JSON.stringify(data.user));
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Tidak dapat terhubung ke server.");
+      }
+    };
+
+    fetchProfile();
   }, [router]);
 
   // DELETE ACCOUNT
-  const handleDeleteAccount = () => {
-    const confirmDelete = window.confirm("Apakah anda ini menghapus akun?");
+  const handleDeleteAccount = async () => {
+    const confirmDelete = window.confirm(
+      "Apakah anda yakin ingin menghapus akun?",
+    );
 
     if (!confirmDelete) {
       return;
     }
 
-    // Hapus data akun
-    localStorage.removeItem("user");
-    localStorage.removeItem("isLoggedIn");
-
-    // Beritahu component lain bahwa user sudah logout
-    window.dispatchEvent(new Event("login"));
-
-    alert("Akun berhasil dihapus.");
-
-    // Kembali ke halaman login
-    router.push("/Login");
-  };
-
-  // EDIT / SAVE ACCOUNT
-  const handleEdit = () => {
-    // Kalau belum edit → masuk mode edit
-    if (!isEditing) {
-      setIsEditing(true);
-      return;
-    }
-
-    // Kalau sedang edit → simpan perubahan
     const storedUser = localStorage.getItem("user");
 
     if (!storedUser) {
@@ -68,18 +71,129 @@ export default function Profile() {
 
     const user = JSON.parse(storedUser);
 
-    const updatedUser = {
-      ...user,
-      username: username,
-      email: email,
-      telp: telp,
-    };
+    try {
+      const response = await fetch(
+        `http://localhost:5000/profile/${user.user_id}`,
+        {
+          method: "DELETE",
+        },
+      );
 
-    localStorage.setItem("user", JSON.stringify(updatedUser));
+      const data = await response.json();
 
-    setIsEditing(false);
+      if (!response.ok) {
+        alert(data.message || "Gagal menghapus akun.");
+        return;
+      }
 
-    alert("Profile berhasil diperbarui.");
+      // Hapus data login dari localStorage
+      localStorage.removeItem("user");
+      localStorage.removeItem("isLoggedIn");
+
+      // Beritahu component lain bahwa user sudah logout
+      window.dispatchEvent(new Event("login"));
+
+      alert("Akun berhasil dihapus.");
+
+      router.push("/Login");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Tidak dapat terhubung ke server.");
+    }
+  };
+
+  // EDIT / SAVE PROFILE
+  const handleEdit = async () => {
+    // Kalau belum edit → masuk mode edit
+    if (!isEditing) {
+      setIsEditing(true);
+      return;
+    }
+
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+      alert("Data akun tidak ditemukan.");
+      return;
+    }
+
+    const user = JSON.parse(storedUser);
+
+    // NORMALISASI DATA
+    const normalizedUsername = username.trim().toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedTelp = telp.trim();
+
+    // VALIDASI USERNAME
+    if (!normalizedUsername) {
+      alert("Username wajib diisi.");
+      return;
+    }
+
+    if (normalizedUsername.length < 6) {
+      alert("Username minimal 6 karakter.");
+      return;
+    }
+
+    // VALIDASI EMAIL
+    if (!normalizedEmail) {
+      alert("Email wajib diisi.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(normalizedEmail)) {
+      alert("Format email tidak valid.");
+      return;
+    }
+
+    // VALIDASI NOMOR TELEPON
+    if (normalizedTelp && !/^\d+$/.test(normalizedTelp)) {
+      alert("Nomor telepon hanya boleh berisi angka.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/profile/${user.user_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: normalizedUsername,
+            email: normalizedEmail,
+            phoneNumber: normalizedTelp || null,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Gagal memperbarui profile.");
+        return;
+      }
+
+      // UPDATE LOCAL STORAGE
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // UPDATE TAMPILAN
+
+      setUsername(data.user.username || "");
+      setEmail(data.user.email || "");
+      setTelp(data.user.phoneNumber || "");
+
+      setIsEditing(false);
+
+      alert("Profile berhasil diperbarui.");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Tidak dapat terhubung ke server.");
+    }
   };
 
   return (
@@ -93,17 +207,18 @@ export default function Profile() {
         direction="column"
         gap="2vh"
         borderRadius="2vh"
-        justify="center">
+        justify="center"
+      >
         {/* Header */}
         <Flex
           w="100%"
           justify="center"
           borderBottom="1px solid #dfdddd"
           pb="2vh"
-          // align="center"
           gap="1vh"
-          direction={{ base: "column", sm: "row" }}>
-          <Flex direction={"row"} gap={"2vh"} align="center">
+          direction={{ base: "column", sm: "row" }}
+        >
+          <Flex direction="row" gap="2vh" align="center">
             <Avatar.Root w="12vh" h="12vh">
               <Avatar.Fallback name={username} />
               <Avatar.Image src="" />
@@ -114,7 +229,8 @@ export default function Profile() {
               direction="row"
               gap="0.5vh"
               justify="space-between"
-              align="center">
+              align="center"
+            >
               <Flex w="100%" direction="column" gap="0.5vh">
                 <Text fontWeight="bold" fontSize="xl">
                   {username}
@@ -152,21 +268,22 @@ export default function Profile() {
           </Flex>
 
           <Flex
-          
             w="100%"
             direction="column"
             gap="0.5vh"
             justify="center"
-            align="end">
+            align="end"
+          >
             <Button
-              w={{base:"100%",sm:"20vh"}}
+              w={{ base: "100%", sm: "20vh" }}
               fontWeight="bold"
               bg="button.third"
               _hover={{
                 bg: "hover.primary",
               }}
               onClick={() => router.push("/ChangePassword")}
-              borderRadius="4vh">
+              borderRadius="4vh"
+            >
               Change Password
             </Button>
           </Flex>
@@ -213,8 +330,14 @@ export default function Profile() {
           <Input
             bg={isEditing ? "white" : "gray.100"}
             h="4vh"
-            value={telp}
-            onChange={(e) => setTelp(e.target.value)}
+            value={isEditing ? telp : telp || "-"}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              if (/^\d*$/.test(value)) {
+                setTelp(value);
+              }
+            }}
             placeholder="Masukkan Nomor Telepon..."
             _placeholder={{
               color: "text.thrid",
@@ -224,28 +347,37 @@ export default function Profile() {
         </Flex>
 
         {/* Buttons */}
-        <Flex w="100%" justify="center" direction={{base:"column",sm:"row"}} gap="2vh">
+        <Flex
+          w="100%"
+          justify="center"
+          direction={{ base: "column", sm: "row" }}
+          gap="2vh"
+        >
+          {/* Delete Account */}
           <Button
-            w={{base:"100%",sm:"20vh"}}
+            w={{ base: "100%", sm: "20vh" }}
             fontWeight="bold"
             bg="button.fouth"
             _hover={{
               bg: "hover.primary",
             }}
             borderRadius="4vh"
-            onClick={handleDeleteAccount}>
+            onClick={handleDeleteAccount}
+          >
             Delete Account
           </Button>
 
+          {/* Edit / Save */}
           <Button
-            w={{base:"100%",sm:"20vh"}}
+            w={{ base: "100%", sm: "20vh" }}
             fontWeight="bold"
             bg="button.primary"
             _hover={{
               bg: "hover.primary",
             }}
             borderRadius="4vh"
-            onClick={handleEdit}>
+            onClick={handleEdit}
+          >
             {isEditing ? "Save" : "Edit"}
           </Button>
         </Flex>
