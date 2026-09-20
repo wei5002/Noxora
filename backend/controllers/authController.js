@@ -7,10 +7,43 @@ export const register = async (req, res) => {
     const { username, email, phoneNumber, password, confirmPassword } =
       req.body;
 
+    // Normalisasi data
+    const normalizedUsername = username?.trim().toLowerCase();
+    const normalizedEmail = email?.trim().toLowerCase();
+    const normalizedPhoneNumber = phoneNumber?.trim();
+
     // Cek data wajib
-    if (!username || !email || !password || !confirmPassword) {
+    if (
+      !normalizedUsername ||
+      !normalizedEmail ||
+      !password ||
+      !confirmPassword
+    ) {
       return res.status(400).json({
         message: "Data registrasi belum lengkap",
+      });
+    }
+
+    // Cek username minimal 6 karakter
+    if (normalizedUsername.length < 6) {
+      return res.status(400).json({
+        message: "Username minimal 6 karakter",
+      });
+    }
+
+    // Cek format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Format email tidak valid",
+      });
+    }
+
+    // Cek nomor telepon
+    if (normalizedPhoneNumber && !/^\d+$/.test(normalizedPhoneNumber)) {
+      return res.status(400).json({
+        message: "Nomor telepon hanya boleh berisi angka",
       });
     }
 
@@ -33,19 +66,19 @@ export const register = async (req, res) => {
       `SELECT user_id, username, email
        FROM users
        WHERE username = $1 OR email = $2`,
-      [username, email],
+      [normalizedUsername, normalizedEmail],
     );
 
     if (existingUser.rows.length > 0) {
       const user = existingUser.rows[0];
 
-      if (user.username === username) {
+      if (user.username === normalizedUsername) {
         return res.status(409).json({
           message: "Username sudah terdaftar",
         });
       }
 
-      if (user.email === email) {
+      if (user.email === normalizedEmail) {
         return res.status(409).json({
           message: "Email sudah terdaftar",
         });
@@ -57,11 +90,16 @@ export const register = async (req, res) => {
 
     // Simpan user
     const result = await pool.query(
-      `INSERT INTO users 
+      `INSERT INTO users
         (username, email, "phoneNumber", password)
        VALUES ($1, $2, $3, $4)
        RETURNING user_id, username, email, "phoneNumber"`,
-      [username, email, phoneNumber || null, hashedPassword],
+      [
+        normalizedUsername,
+        normalizedEmail,
+        normalizedPhoneNumber || null,
+        hashedPassword,
+      ],
     );
 
     res.status(201).json({
@@ -82,10 +120,22 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Normalisasi email
+    const normalizedEmail = email?.trim().toLowerCase();
+
     // Cek data wajib
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       return res.status(400).json({
         message: "Email dan password wajib diisi",
+      });
+    }
+
+    // Cek format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        message: "Format email tidak valid",
       });
     }
 
@@ -94,7 +144,7 @@ export const login = async (req, res) => {
       `SELECT user_id, username, email, "phoneNumber", password
        FROM users
        WHERE email = $1`,
-      [email],
+      [normalizedEmail],
     );
 
     // User tidak ditemukan

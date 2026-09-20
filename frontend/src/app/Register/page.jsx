@@ -13,30 +13,46 @@ export default function Profile() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleSignUp = () => {
-    if (!username || !email || !password || !confirmPassword) {
-      alert("Semua data harus diisi.");
+const handleSignUp = async () => {
+  if (!username || !email || !password || !confirmPassword) {
+    alert("Semua data harus diisi.");
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    alert("Password dan Confirm Password tidak sama.");
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5000/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username,
+        email,
+        password,
+        confirmPassword,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Registrasi gagal.");
       return;
     }
-
-    if (password !== confirmPassword) {
-      alert("Password dan Confirm Password tidak sama.");
-      return;
-    }
-
-    const user = {
-      username,
-      email,
-      password,
-    };
-
-    localStorage.setItem("user", JSON.stringify(user));
 
     alert("Sign Up berhasil!");
 
     router.push("/Login");
-  };
-
+  } catch (error) {
+    console.error("Error:", error);
+    alert("Tidak dapat terhubung ke server.");
+  }
+};
   return (
     <Flex w="100%" minH="100vh" justify="center" align="center">
       <Flex
