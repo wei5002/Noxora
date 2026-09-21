@@ -1,8 +1,6 @@
 import pool from "../db.js";
 
-// =========================
 // PROFILE
-// =========================
 export const getProfile = async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -34,9 +32,7 @@ export const getProfile = async (req, res) => {
   }
 };
 
-// =========================
 // UPDATE PROFILE
-// =========================
 export const updateProfile = async (req, res) => {
   try {
     const { user_id } = req.params;
@@ -112,9 +108,7 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// =========================
 // DELETE ACCOUNT
-// =========================
 export const deleteAccount = async (req, res) => {
   try {
     const { user_id } = req.params;

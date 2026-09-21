@@ -14,9 +14,7 @@ export default function Header() {
   const [now, setNow] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // =====================================================
   // CEK STATUS LOGIN
-  // =====================================================
   useEffect(() => {
     const checkLogin = () => {
       const loggedIn = localStorage.getItem("isLoggedIn");
@@ -24,57 +22,52 @@ export default function Header() {
       setIsLoggedIn(loggedIn === "true");
     };
 
-    // Cek ketika Header pertama kali muncul
     checkLogin();
 
-    // Cek jika ada perubahan localStorage
+    // Perubahan localStorage dari tab/window lain
     window.addEventListener("storage", checkLogin);
+
+    // Perubahan login dari halaman yang sama
+    window.addEventListener("login", checkLogin);
 
     return () => {
       window.removeEventListener("storage", checkLogin);
+      window.removeEventListener("login", checkLogin);
     };
   }, []);
 
-  // =====================================================
-  // CEK KEMBALI KETIKA PINDAH HALAMAN
-  // =====================================================
-  useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn");
-
-    setIsLoggedIn(loggedIn === "true");
-  }, [pathname]);
-
-  // =====================================================
   // DATE
-  // =====================================================
   useEffect(() => {
-    // Set tanggal pertama kali
-    setNow(new Date());
+    const updateDate = () => {
+      setNow(new Date());
+    };
+
+    // Tunggu sampai effect selesai sebelum setState pertama
+    const timeout = setTimeout(() => {
+      updateDate();
+    }, 0);
 
     // Update setiap 1 detik
     const interval = setInterval(() => {
-      setNow(new Date());
+      updateDate();
     }, 1000);
 
-    // Bersihkan interval ketika component unmount
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
   }, []);
 
-  // =====================================================
   // FORMAT DATE
-  // =====================================================
   const formattedDateTime = now
     ? now.toLocaleDateString("en-US", {
-        // weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
       })
     : "";
 
-  // =====================================================
   // LOGO
-  // =====================================================
   const handleLogoClick = () => {
     if (pathname === "/") {
       window.scrollTo({
@@ -86,9 +79,7 @@ export default function Header() {
     }
   };
 
-  // =====================================================
   // UPLOAD / PREDICTION
-  // =====================================================
   const handleUploadClick = () => {
     if (pathname === "/") {
       document.getElementById("uploadImage")?.scrollIntoView({
@@ -101,24 +92,20 @@ export default function Header() {
     }
   };
 
-  // =====================================================
   // LOGOUT
-  // =====================================================
   const handleLogout = () => {
-    const confirmed = window.confirm("Apakah Anda yakin ingin logout?");
+    const confirmed = window.confirm(
+      "Apakah Anda yakin ingin logout?",
+    );
 
-    // Jika tekan Cancel
     if (!confirmed) {
       return;
     }
 
-    // Hapus status login
     localStorage.removeItem("isLoggedIn");
 
-    // Ubah state Header
     setIsLoggedIn(false);
 
-    // Kembali ke halaman utama
     router.push("/");
   };
 
@@ -131,7 +118,8 @@ export default function Header() {
       top="3vh"
       left="5%"
       w="90%"
-      borderRadius="2vh">
+      borderRadius="2vh"
+    >
       <Flex
         w="100%"
         align="center"
@@ -154,10 +142,11 @@ export default function Header() {
           sm: "2.5vh",
           md: "2.5vh",
           lg: "2.5vh",
-        }}>
+        }}
+      >
         {/* =========================
-      LOGO + DATE + COLOR MODE
-  ========================= */}
+            LOGO + DATE + COLOR MODE
+        ========================= */}
         <Flex
           flex="1"
           minW={{
@@ -167,7 +156,8 @@ export default function Header() {
           direction="row"
           align="center"
           justify="space-between"
-          gap="2vh">
+          gap="2vh"
+        >
           {/* LOGO */}
           <Flex
             direction="row"
@@ -175,10 +165,14 @@ export default function Header() {
             gap="1vh"
             cursor="pointer"
             flexShrink={0}
-            onClick={handleLogoClick}>
+            onClick={handleLogoClick}
+          >
             <RiCloudWindyFill size="4vh" />
 
-            <Text fontWeight="bold" fontSize={"lg"}>
+            <Text
+              fontWeight="bold"
+              fontSize="lg"
+            >
               Noxora
             </Text>
           </Flex>
@@ -191,12 +185,14 @@ export default function Header() {
               base: "1vh",
               md: "2vh",
             }}
-            minW={0}>
+            minW={0}
+          >
             <Text
               fontSize="sm"
               whiteSpace="nowrap"
               overflow="hidden"
-              textOverflow="ellipsis">
+              textOverflow="ellipsis"
+            >
               {formattedDateTime}
             </Text>
 
@@ -219,7 +215,8 @@ export default function Header() {
             base: "1vh",
             md: "1.5vh",
           }}
-          flexShrink={0}>
+          flexShrink={0}
+        >
           {/* LOGIN / PROFILE */}
           {isLoggedIn ? (
             <>
@@ -232,12 +229,15 @@ export default function Header() {
                   base: "4vh",
                   sm: "4.5vh",
                 }}
-                _hover={{ bg: "hover.primary" }}
-                fontSize={"sm"}
+                _hover={{
+                  bg: "hover.primary",
+                }}
+                fontSize="sm"
                 fontWeight="bold"
                 bg="button.primary"
                 borderRadius="10vh"
-                onClick={() => router.push("/Profile")}>
+                onClick={() => router.push("/Profile")}
+              >
                 Profile
               </Button>
 
@@ -246,16 +246,19 @@ export default function Header() {
                   base: "12vh",
                   sm: "13vh",
                 }}
-                _hover={{ bg: "hover.primary" }}
                 h={{
                   base: "4vh",
                   sm: "4.5vh",
                 }}
-                fontSize={"sm"}
+                _hover={{
+                  bg: "hover.primary",
+                }}
+                fontSize="sm"
                 fontWeight="bold"
                 bg="button.thirth"
                 borderRadius="10vh"
-                onClick={handleLogout}>
+                onClick={handleLogout}
+              >
                 Logout
               </Button>
             </>
@@ -266,16 +269,19 @@ export default function Header() {
                   base: "12vh",
                   sm: "13vh",
                 }}
-                _hover={{ bg: "hover.primary" }}
                 h={{
                   base: "4vh",
                   sm: "4.5vh",
                 }}
-                fontSize={"sm"}
+                _hover={{
+                  bg: "hover.primary",
+                }}
+                fontSize="sm"
                 fontWeight="bold"
                 bg="button.primary"
                 borderRadius="10vh"
-                onClick={() => router.push("/Login")}>
+                onClick={() => router.push("/Login")}
+              >
                 Login
               </Button>
 
@@ -284,16 +290,19 @@ export default function Header() {
                   base: "12vh",
                   sm: "13vh",
                 }}
-                _hover={{ bg: "hover.primary" }}
                 h={{
                   base: "4vh",
                   sm: "4.5vh",
                 }}
-                fontSize={"sm"}
+                _hover={{
+                  bg: "hover.primary",
+                }}
+                fontSize="sm"
                 fontWeight="bold"
                 bg="button.thirth"
                 borderRadius="10vh"
-                onClick={() => router.push("/Register")}>
+                onClick={() => router.push("/Register")}
+              >
                 Sign up
               </Button>
             </>

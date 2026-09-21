@@ -120,15 +120,15 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Normalisasi email
-    const normalizedEmail = email?.trim().toLowerCase();
-
     // Cek data wajib
-    if (!normalizedEmail || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         message: "Email dan password wajib diisi",
       });
     }
+
+    // Normalisasi email
+    const normalizedEmail = email.trim().toLowerCase();
 
     // Cek format email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -165,15 +165,6 @@ export const login = async (req, res) => {
       });
     }
 
-    // Cek password baru tidak boleh sama dengan password lama
-    const isSamePassword = await bcrypt.compare(newPassword, user.password);
-
-    if (isSamePassword) {
-      return res.status(400).json({
-        message: "Password baru tidak boleh sama dengan password sebelumnya",
-      });
-    }
-    
     // Login berhasil
     res.status(200).json({
       message: "Login berhasil",
@@ -185,7 +176,7 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Login Error:", error);
 
     res.status(500).json({
       message: "Terjadi kesalahan pada server",

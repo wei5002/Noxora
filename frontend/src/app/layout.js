@@ -1,4 +1,3 @@
-// app/layout.js — TANPA "use client", metadata tetap jalan normal
 import "./globals.css";
 import { Flex } from "@chakra-ui/react";
 import { Provider } from "@/components/ui/provider";
@@ -15,10 +14,18 @@ export default function RootLayout({ children }) {
     <html lang="id" suppressHydrationWarning>
       <body>
         <Provider>
-          <Flex posi direction="column" w="100%" minH="100vh" align="center" bg="bg.primary">
+          <Flex
+            direction="column"
+            w="100%"
+            minH="100vh"
+            align="center"
+            bg="bg.primary"
+          >
             <Header />
+
             {children}
           </Flex>
+
           <Toaster />
         </Provider>
       </body>

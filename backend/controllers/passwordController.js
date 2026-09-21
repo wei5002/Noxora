@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import pool from "../db.js";
+import { sendResetPasswordEmail } from "../emailService.js";
 
 // CHANGE PASSWORD
 export const changePassword = async (req, res) => {
@@ -76,6 +77,7 @@ export const changePassword = async (req, res) => {
     });
   }
 };
+
 // FORGOT PASSWORD
 export const forgotPassword = async (req, res) => {
   try {
@@ -88,12 +90,14 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Cari user
     const result = await pool.query(
       `SELECT user_id, email
        FROM users
        WHERE email = $1`,
-      [email],
+      [normalizedEmail],
     );
 
     // Email tidak ditemukan
@@ -126,16 +130,20 @@ export const forgotPassword = async (req, res) => {
       [user.user_id, token, expiresAt],
     );
 
-    // Untuk testing Postman
+    // Link reset password
+    const resetLink = `http://localhost:3000/ChangePassword?token=${token}`;
+
+    // Kirim email
+    await sendResetPasswordEmail(user.email, resetLink);
+
     res.status(200).json({
-      message: "Token reset password berhasil dibuat",
-      token: token,
+      message: "Link reset password berhasil dikirim ke email",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Forgot Password Error:", error);
 
     res.status(500).json({
-      message: "Terjadi kesalahan pada server",
+      message: "Gagal mengirim email reset password",
     });
   }
 };

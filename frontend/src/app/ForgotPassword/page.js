@@ -10,16 +10,46 @@ export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [showPopup, setShowPopup] = useState(false);
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = async () => {
+    // Cek email
     if (!email) {
       alert("Silakan masukkan email Anda.");
       return;
     }
 
-    // Nanti di sini bisa diganti dengan API backend
-    // untuk mengirim reset password link
+    // Cek format email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    setShowPopup(true);
+    if (!emailRegex.test(email)) {
+      alert("Format email tidak valid.");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/forgot-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.message || "Gagal mengirim reset password.");
+        return;
+      }
+
+      // Tampilkan popup
+      setShowPopup(true);
+    } catch (error) {
+      console.error("Error:", error);
+
+      alert("Tidak dapat terhubung ke server.");
+    }
   };
 
   return (
@@ -33,13 +63,15 @@ export default function ForgotPassword() {
         direction="column"
         gap="2vh"
         borderRadius="2vh"
-        justify="center">
+        justify="center"
+      >
         {/* Header */}
         <Flex
           borderBottom="1px solid #d6d1d1"
           pb="0.5vh"
           align="center"
-          justify="center">
+          justify="center"
+        >
           <Text fontWeight="bold" fontSize="xl">
             Forgot Password
           </Text>
@@ -50,7 +82,8 @@ export default function ForgotPassword() {
           <Flex
             direction={{ base: "column", sm: "row" }}
             align={{ base: "stretch", sm: "center" }}
-            gap={{ base: "0.5vh", sm: "2vh" }}>
+            gap={{ base: "0.5vh", sm: "2vh" }}
+          >
             <Text w={{ base: "100%", sm: "25%" }}>Email</Text>
 
             <Input
@@ -72,7 +105,8 @@ export default function ForgotPassword() {
             align="center"
             direction="column"
             gap="1vh"
-            mt="1vh">
+            mt="1vh"
+          >
             <Button
               w="30vh"
               fontWeight="bold"
@@ -81,7 +115,8 @@ export default function ForgotPassword() {
                 bg: "hover.primary",
               }}
               borderRadius="4vh"
-              onClick={handleForgotPassword}>
+              onClick={handleForgotPassword}
+            >
               Send Email
             </Button>
           </Flex>
@@ -97,7 +132,8 @@ export default function ForgotPassword() {
           justify="center"
           align="center"
           zIndex="9999"
-          onClick={() => setShowPopup(false)}>
+          onClick={() => setShowPopup(false)}
+        >
           <Flex
             bg="bg.secondary"
             w={{ base: "85%", md: "40%", lg: "30%" }}
@@ -107,7 +143,8 @@ export default function ForgotPassword() {
             align="center"
             gap="2vh"
             boxShadow="0 4px 12px rgba(0, 0, 0, 0.3)"
-            onClick={(e) => e.stopPropagation()}>
+            onClick={(e) => e.stopPropagation()}
+          >
             <Text fontSize="xl" fontWeight="bold" color="text.primary">
               Email Terkirim
             </Text>
@@ -124,7 +161,8 @@ export default function ForgotPassword() {
               onClick={() => router.push("/Login")}
               _hover={{
                 bg: "hover.primary",
-              }}>
+              }}
+            >
               OK
             </Button>
           </Flex>

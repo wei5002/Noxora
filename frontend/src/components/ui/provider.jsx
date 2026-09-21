@@ -3,12 +3,18 @@
 import { ChakraProvider } from "@chakra-ui/react";
 import { ThemeProvider } from "next-themes";
 import { system } from "./theme";
-// import { system } from "@/theme"; // sesuaikan path ke file config kamu
 
-export function Provider(props) {
+export function Provider({ children }) {
   return (
     <ChakraProvider value={system}>
-      <ThemeProvider attribute="class" disableTransitionOnChange {...props} />
+      <ThemeProvider
+        attribute="class"
+        disableTransitionOnChange
+        defaultTheme="system"
+        enableSystem
+      >
+        {children}
+      </ThemeProvider>
     </ChakraProvider>
   );
 }
