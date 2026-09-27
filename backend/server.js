@@ -70,7 +70,6 @@ app.get("/api/predictions", async (req, res) => {
 app.use("/", authRoutes);
 app.use("/", profileRoutes);
 app.use("/", passwordRoutes);
-app.use("/api/weather", weatherRoutes);
 
 // MENJALANKAN SERVER
 app.listen(PORT, () => {

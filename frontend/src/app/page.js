@@ -17,8 +17,7 @@ export default function Home() {
   const router = useRouter();
 
   const [predictionData, setPredictionData] = useState(null);
-  const [selectedLocation, setSelectedLocation] =
-    useState("1");
+  const [selectedLocation, setSelectedLocation] = useState("1");
   const [selectedPredictionLocation, setSelectedPredictionLocation] =
     useState("");
 
@@ -26,39 +25,29 @@ export default function Home() {
   const [error, setError] = useState("");
   const [allPredictions, setAllPredictions] = useState([]);
 
-  const fetchWeather = async (locationId, targetTime) => {
-    try {
-      setWeatherLoading(true);
-      setWeatherError("");
+  const currentLocationData = allPredictions.find(
+    (item) => String(item.location_id) === String(selectedLocation),
+  );
 
-      const params = new URLSearchParams({
-        targetTime: targetTime,
-      });
+  const locationNames = {
+    1: "Jakarta Timur",
+    2: "Kepulauan Seribu",
+    3: "Bekasi",
+    4: "Bogor",
+    5: "Sukabumi",
+    6: "Tangerang",
+    7: "Banten Utara",
+    8: "Bekasi Timur",
+    9: "Karawang",
+    10: "Purwakarta",
+  };
 
-      const url = `http://localhost:5000/api/weather/${locationId}?${params.toString()}`;
+  const getLocationLag1 = (locationId) => {
+    const item = allPredictions.find(
+      (row) => String(row.location_id) === String(locationId),
+    );
 
-      const response = await fetch(url);
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Gagal mengambil data cuaca.");
-      }
-
-      setWeatherInput({
-        temperature: data.temperature_2m ?? "",
-        windSpeed: data.wind_speed_10m ?? "",
-        rain: data.rain ?? "",
-        humidity: data.relative_humidity_2m ?? "",
-      });
-
-      setWeatherTime(data.weather_time);
-    } catch (error) {
-      console.error("Fetch weather error:", error);
-      setWeatherError(error.message || "Gagal mengambil data cuaca.");
-    } finally {
-      setWeatherLoading(false);
-    }
+    return item?.LAG1 != null ? Number(item.LAG1).toFixed(2) : "-";
   };
 
   const handleSendPrediction = async () => {
@@ -170,6 +159,25 @@ export default function Home() {
     }
   }, []);
 
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/predictions");
+
+        if (!response.ok) {
+          throw new Error("Gagal mengambil data prediksi.");
+        }
+
+        const data = await response.json();
+        setAllPredictions(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Gagal mengambil data lokasi:", error);
+      }
+    };
+
+    fetchPredictions();
+  }, []);
+
   return (
     <Flex
       direction={"column"}
@@ -252,16 +260,27 @@ export default function Home() {
                   </Flex>
                 </Flex>
 
-                <Text fontWeight={"bold"}>12.59</Text>
+                <Text fontWeight="bold">
+                  {new Date().toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                    timeZone: "Asia/Jakarta",
+                  })}
+                </Text>
               </Flex>
 
               <Flex direction={"row"} gap={"2vh"} align={"center"}>
                 <FaCloudSun size={"8vh"} />
-                <Text fontSize={"xl"}>26.7 μg/m³</Text>
+                <Text fontSize="xl">
+                  {currentLocationData?.LAG1 != null
+                    ? `${Number(currentLocationData.LAG1).toFixed(2)} μg/m³`
+                    : "-"}
+                </Text>
               </Flex>
 
-              <Text fontSize={"sm"}>
-                Ini jarak antar waktu kemarin naik/turun berapa
+              <Text fontSize="sm">
+                Data aktual terakhir: {currentLocationData?.weather_time ?? "-"}
               </Text>
             </Flex>
 
@@ -274,12 +293,54 @@ export default function Home() {
               }}
               gap="2vh"
             >
-              <MiniCard title="Location" hasil="Jakarta" />
-              <MiniCard title="Nitrogen Dioxide" hasil="26.7 μg/m³" />
-              <MiniCard title="Temperature" hasil="22.6 °C" />
-              <MiniCard title="Wind Speed" hasil="8.9 km/h" />
-              <MiniCard title="Rain" hasil="0 mm" />
-              <MiniCard title="Relative Humidity" hasil="96%" />
+              <MiniCard
+                title="Location"
+                hasil={locationNames[selectedLocation] ?? "-"}
+              />
+
+              <MiniCard
+                title="Nitrogen Dioxide"
+                hasil={
+                  currentLocationData?.LAG1 != null
+                    ? `${Number(currentLocationData.LAG1).toFixed(2)} μg/m³`
+                    : "-"
+                }
+              />
+              <MiniCard
+                title="Temperature"
+                hasil={
+                  currentLocationData?.temperature_2m != null
+                    ? `${Number(currentLocationData.temperature_2m).toFixed(2)} °C`
+                    : "-"
+                }
+              />
+
+              <MiniCard
+                title="Wind Speed"
+                hasil={
+                  currentLocationData?.wind_speed_10m != null
+                    ? `${Number(currentLocationData.wind_speed_10m).toFixed(2)} km/h`
+                    : "-"
+                }
+              />
+
+              <MiniCard
+                title="Rain"
+                hasil={
+                  currentLocationData?.rain != null
+                    ? `${Number(currentLocationData.rain).toFixed(2)} mm`
+                    : "-"
+                }
+              />
+
+              <MiniCard
+                title="Relative Humidity"
+                hasil={
+                  currentLocationData?.relative_humidity_2m != null
+                    ? `${Number(currentLocationData.relative_humidity_2m).toFixed(2)}%`
+                    : "-"
+                }
+              />
             </Grid>
 
             <Flex
@@ -295,13 +356,23 @@ export default function Home() {
               }}
             >
               <Flex w={"100%"} direction={"row"} gap={"2vh"}>
-                <MiniCardLocation location={"Jakarta"} hasil={"26.7"} />
-                <MiniCardLocation location={"Bogor"} hasil={"26.7"} />
+                <MiniCardLocation
+                  location="Jakarta Timur"
+                  hasil={getLocationLag1(1)}
+                />
+
+                <MiniCardLocation location="Bogor" hasil={getLocationLag1(4)} />
               </Flex>
 
               <Flex w={"100%"} direction={"row"} gap={"2vh"}>
-                <MiniCardLocation location={"Depok"} hasil={"26.7"} />
-                <MiniCardLocation location={"Tangerang"} hasil={"26.7"} />
+                <MiniCardLocation
+                  location="Tangerang"
+                  hasil={getLocationLag1(6)}
+                />{" "}
+                <MiniCardLocation
+                  location="Bekasi"
+                  hasil={getLocationLag1(3)}
+                />
               </Flex>
             </Flex>
           </Flex>
