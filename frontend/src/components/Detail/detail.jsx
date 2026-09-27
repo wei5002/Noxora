@@ -178,11 +178,12 @@ export const InputPrediction = ({
       </Text>
       <InputGroup endAddon={satuan}>
         <Input
+          readOnly
           bg={"whiteAlpha.900"}
           color={"blackAlpha.800"}
           h={"4vh"}
-          value={value}
-          onchange={onchange}
+          value={value ?? ""}
+          onChange={onchange}
           placeholder={placeholder}
           _placeholder={{ color: "#7d7b7b" }}
         />

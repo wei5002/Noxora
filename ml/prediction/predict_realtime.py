@@ -232,10 +232,12 @@ def prepare_prediction_data(
                 previous.iloc[0]["nitrogen_dioxide"]
             )
 
-        # Data meteorologi pada jam target.
-        target_weather = location_data[
-            location_data["time"] == target_time
-        ]
+            # Data meteorologi satu jam sebelum waktu target.
+            weather_time = target_time - pd.Timedelta(hours=1)
+
+            target_weather = location_data[
+                location_data["time"] == weather_time
+            ]
 
         if target_weather.empty:
             raise ValueError(
@@ -248,9 +250,12 @@ def prepare_prediction_data(
         rows.append({
             "location_id": location_id,
             "target_time": target_time,
+            "weather_time": weather_time,
+
             "LAG1": lag_values[0],
             "LAG2": lag_values[1],
             "LAG3": lag_values[2],
+            
             "temperature_2m": weather["temperature_2m"],
             "relative_humidity_2m": weather[
                 "relative_humidity_2m"

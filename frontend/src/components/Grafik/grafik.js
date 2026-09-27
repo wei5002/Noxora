@@ -10,7 +10,7 @@ const Chart = dynamic(() => import("react-apexcharts"), {
 
 export default function PredictionChart({ data }) {
   const textPrimary = useColorModeValue("#464646", "#ffffff");
-  const hasData = !!data;
+  const hasData = Boolean(data?.chartSeries?.length);
 
   const options = {
     chart: {
@@ -22,18 +22,26 @@ export default function PredictionChart({ data }) {
     dataLabels: { enabled: false },
     stroke: { curve: "smooth", width: 3 },
     xaxis: {
-      categories: hasData
-        ? data.chartCategories
-        : ["18:00","19:00","20:00","21:00","22:00","23:00","00:00","01:00"],
+      categories: data?.chartCategories ?? [],
       labels: {
-        style: { colors: textPrimary, fontSize: "8px" },
+        style: {
+          colors: textPrimary,
+          fontSize: "12px",
+        },
       },
     },
     yaxis: {
-      min: -10,
       labels: {
-        offsetX: -25,
-        style: { colors: textPrimary, fontSize: "2px" },
+        formatter: (value) => Number(value).toFixed(2),
+        style: {
+          colors: textPrimary,
+          fontSize: "12px",
+        },
+      },
+    },
+    tooltip: {
+      y: {
+        formatter: (value) => `${Number(value).toFixed(2)} μg/m³`,
       },
     },
     legend: { position: "bottom", horizontalAlign: "center" },
@@ -43,16 +51,20 @@ export default function PredictionChart({ data }) {
 
   const series = [
     {
-      name: "Aktual",
-      data: hasData ? data.chartSeries : [],
+      name: "Konsentrasi NO₂",
+      data: data?.chartSeries ?? [],
     },
   ];
 
   return (
     <>
       <style jsx global>{`
-        .apexcharts-xaxis-label { font-size: 12px !important; }
-        .apexcharts-yaxis-label { font-size: 12px !important; }
+        .apexcharts-xaxis-label {
+          font-size: 12px !important;
+        }
+        .apexcharts-yaxis-label {
+          font-size: 12px !important;
+        }
       `}</style>
 
       <Flex
@@ -62,43 +74,33 @@ export default function PredictionChart({ data }) {
         boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
         borderRadius={"2vh"}
         bg={"bg.secondary"}
-        gap={"2vh"}>
+        gap={"2vh"}
+      >
         <Flex pb={"0.5vh"} borderBottom={"1px solid #dfdddd"}>
           <Text fontWeight={"bold"} color={"text.fouth"}>
             Prediction Graph
           </Text>
         </Flex>
 
-        <Flex mt={{ base: "-2.5vh", lg: "-1vh" }} position="relative">
-          <Flex w={"100%"} direction={"column"} gap={"2vh"} h={"27vh"}>
-            <Chart
-              width="100%"
-              options={options}
-              series={series}
-              type="line"
-              height={"115%"}
-            />
-          </Flex>
-
-          {!hasData && (
-            <Flex
-              position="absolute"
-              inset={0}
-              align="center"
-              justify="center"
-              bg="blackAlpha.50"
-              borderRadius="1vh">
-              <Text
-                fontSize="sm"
-                color="text.thrid"
-                fontWeight="semibold"
-                textAlign="center"
-                px="2vh">
-                Mohon isi data prediksi
-              </Text>
+        {hasData ? (
+          <Flex mt={{ base: "-2.5vh", lg: "-1vh" }} position="relative">
+            <Flex w={"100%"} direction={"column"} gap={"2vh"} h={"27vh"}>
+              <Chart
+                width="100%"
+                options={options}
+                series={series}
+                type="line"
+                height={"110%"}
+              />
             </Flex>
-          )}
-        </Flex>
+          </Flex>
+        ) : (
+          <Flex h="260px" align="center" justify="center">
+            <Text fontSize="sm" color="text.thrid">
+              Pilih lokasi dan tekan Send untuk melihat prediksi.
+            </Text>
+          </Flex>
+        )}
       </Flex>
     </>
   );
