@@ -8,23 +8,19 @@ from sklearn.metrics import (
     r2_score,
 )
 
-
 # PATH
-BASE_DIR = Path(__file__).resolve().parents[1]
 
+BASE_DIR = Path(__file__).resolve().parents[1]
 PREDICTION_DIR = (
     BASE_DIR / "results" / "predictions"
 )
-
 EVALUATION_DIR = (
     BASE_DIR / "results" / "evaluation"
 )
-
 EVALUATION_DIR.mkdir(
     parents=True,
     exist_ok=True,
 )
-
 
 # KOLOM YANG DIBUTUHKAN
 REQUIRED_COLUMNS = [
@@ -35,7 +31,6 @@ REQUIRED_COLUMNS = [
     "split",
 ]
 
-
 # LOAD HASIL PREDIKSI
 def load_predictions():
 
@@ -44,25 +39,27 @@ def load_predictions():
             f"Folder prediksi tidak ditemukan: "
             f"{PREDICTION_DIR}"
         )
-
+    # Membaca file prediksi eksperimen.
+    # File realtime tidak digunakan untuk evaluasi eksperimen.
     prediction_files = sorted(
-        PREDICTION_DIR.glob("*_predictions.csv")
+        file_path
+        for file_path in PREDICTION_DIR.glob(
+            "*_predictions.csv"
+        )
+        if file_path.name != "svr_realtime_predictions.csv"
     )
 
     if not prediction_files:
         raise FileNotFoundError(
-            "Tidak ada file prediksi. "
+            "Tidak ada file prediksi eksperimen. "
             "Jalankan training terlebih dahulu."
         )
 
     dataframes = []
 
     for file_path in prediction_files:
-
-        # print(f"Membaca: {file_path.name}")
-
         df = pd.read_csv(file_path)
-
+        # Periksa kolom yang dibutuhkan
         missing_columns = [
             col
             for col in REQUIRED_COLUMNS
@@ -112,20 +109,19 @@ def load_predictions():
 
 # HITUNG METRIK EVALUASI
 def evaluate_model(actual, predicted):
-
+    # Mean Absolute Error
     mae = mean_absolute_error(
         actual,
         predicted,
     )
-
+    # Mean Squared Error
     mse = mean_squared_error(
         actual,
         predicted,
     )
-
+    # Root Mean Squared Error
     rmse = np.sqrt(mse)
-
-    # R² memerlukan minimal dua data
+    # Coefficient of Determination
     if len(actual) >= 2:
         r2 = r2_score(
             actual,
@@ -141,14 +137,81 @@ def evaluate_model(actual, predicted):
         "R2": r2,
     }
 
+# URUTAN HASIL EVALUASI
+def sort_evaluation_results(results_df):
+    algorithm_order = {
+        "XGBoost": 0,
+        "SVR": 1,
+    }
+    dataset_order = {
+        "no2": 0,
+        "no2_meteorologi": 1,
+    }
+    split_order = {
+        "70_30": 0,
+        "80_20": 1,
+    }
+    results_df = results_df.copy()
+    results_df["_algorithm_order"] = (
+        results_df["algorithm"].map(
+            algorithm_order
+        )
+    )
+    results_df["_dataset_order"] = (
+        results_df["dataset"].map(
+            dataset_order
+        )
+    )
+    results_df["_split_order"] = (
+        results_df["split"].map(
+            split_order
+        )
+    )
+    results_df = (
+        results_df.sort_values(
+            [
+                "_algorithm_order",
+                "_dataset_order",
+                "_split_order",
+            ],
+            na_position="last",
+        )
+        .drop(
+            columns=[
+                "_algorithm_order",
+                "_dataset_order",
+                "_split_order",
+            ]
+        )
+        .reset_index(drop=True)
+    )
+    return results_df
+
+
+# TAMPILKAN TABEL
+def display_table(title, dataframe):
+
+    print("\n" )
+    print(title)
+
+    if dataframe.empty:
+        print("Tidak ada data.")
+        return
+
+    print(
+        dataframe.to_string(
+            index=False,
+            float_format=lambda value: f"{value:.6f}",
+        )
+    )
+
 
 # EVALUASI SELURUH EKSPERIMEN
 def run_evaluation():
-
     predictions = load_predictions()
-
     results = []
 
+    # KELOMPOKKAN DATA BERDASARKAN EKSPERIMEN
     grouped = predictions.groupby(
         [
             "algorithm",
@@ -163,15 +226,12 @@ def run_evaluation():
         dataset,
         split,
     ), group in grouped:
-
         actual = group["actual"].to_numpy()
         predicted = group["predicted"].to_numpy()
-
         metrics = evaluate_model(
             actual,
             predicted,
         )
-
         result = {
             "algorithm": algorithm,
             "dataset": dataset,
@@ -181,66 +241,212 @@ def run_evaluation():
         }
 
         results.append(result)
-
     results_df = pd.DataFrame(results)
 
-    # URUTKAN HASIL BERDASARKAN RMSE
-    results_df = results_df.sort_values(
-        ["split", "RMSE", "MAE"],
-        ascending=[True, True, True],
-    ).reset_index(drop=True)
-
-    # TAMBAHKAN PERINGKAT BERDASARKAN RMSE
-    results_df["rank_rmse"] = (
-        results_df.groupby("split")["RMSE"]
-        .rank(method="min", ascending=True)
-        .astype(int)
-    )
-
-    # TAMPILKAN HASIL TERBAIK SETIAP SPLIT
-    # print("HASIL EKSPERIMEN TERBAIK")
-
-    for split_name in ["70_30", "80_20"]:
-
-        split_results = results_df[
-            results_df["split"] == split_name
-        ].sort_values("RMSE")
-
-        if split_results.empty:
-            print(
-                f"\nTidak ada hasil untuk split {split_name}."
-            )
-            continue
-
-        best = split_results.iloc[0]
-
-        print(
-            f"\nPembagian data: "
-            f"{split_name.replace('_', ':')}"
+    if results_df.empty:
+        raise ValueError(
+            "Tidak ada hasil evaluasi yang dapat ditampilkan."
         )
 
-        print(f"Algoritma      : {best['algorithm']}")
-        print(f"Dataset        : {best['dataset']}")
-        print(f"Jumlah data    : {best['total_data']}")
-        print(f"RMSE           : {best['RMSE']:.6f}")
-        print(f"MAE            : {best['MAE']:.6f}")
-        print(f"MSE            : {best['MSE']:.6f}")
-        print(f"R²             : {best['R2']:.6f}")
+    results_df = sort_evaluation_results(
+        results_df
+    )
 
-        print("\nUrutan eksperimen berdasarkan RMSE:")
+    # TABEL 1: HASIL EVALUASI XGBOOST
+    display_columns = [
+        "dataset",
+        "split",
+        "total_data",
+        "MAE",
+        "MSE",
+        "RMSE",
+        "R2",
+    ]
 
-        for _, row in split_results.iterrows():
+    xgboost_results = results_df[
+        results_df["algorithm"] == "XGBoost"
+    ][display_columns].copy()
 
-            print(
-                f"{row['rank_rmse']}. "
-                f"{row['algorithm']} | "
-                f"{row['dataset']} | "
-                f"RMSE: {row['RMSE']:.6f} | "
-                f"MAE: {row['MAE']:.6f} | "
-                f"R²: {row['R2']:.6f}"
-            )
+    display_table(
+        "TABEL 1. HASIL EVALUASI ALGORITMA XGBOOST",
+        xgboost_results,
+    )
 
-    # SIMPAN HASIL EVALUASI
+    # Simpan tabel XGBoost
+    xgboost_path = (
+        EVALUATION_DIR
+        / "evaluation_xgboost.csv"
+    )
+
+    xgboost_results.to_csv(
+        xgboost_path,
+        index=False,
+    )
+
+    # TABEL 2: HASIL EVALUASI SVR
+
+    svr_results = results_df[
+        results_df["algorithm"] == "SVR"
+    ][display_columns].copy()
+
+    display_table(
+        "TABEL 2. HASIL EVALUASI ALGORITMA SVR",
+        svr_results,
+    )
+
+    # Simpan tabel SVR
+    svr_path = (
+        EVALUATION_DIR
+        / "evaluation_svr.csv"
+    )
+
+    svr_results.to_csv(
+        svr_path,
+        index=False,
+    )
+
+    # TABEL 3: PERINGKAT SPLIT 70:30
+    split_70 = results_df[
+        results_df["split"] == "70_30"
+    ].copy()
+
+    split_70 = split_70.sort_values(
+        ["RMSE", "MAE"],
+        ascending=[True, True],
+    ).reset_index(drop=True)
+
+    split_70.insert(
+        0,
+        "rank_rmse",
+        split_70["RMSE"]
+        .rank(
+            method="min",
+            ascending=True,
+        )
+        .astype(int),
+    )
+
+    comparison_columns = [
+        "rank_rmse",
+        "algorithm",
+        "dataset",
+        "split",
+        "total_data",
+        "MAE",
+        "MSE",
+        "RMSE",
+        "R2",
+    ]
+
+    split_70 = split_70[
+        comparison_columns
+    ]
+
+    display_table(
+        "TABEL 3. PERINGKAT HASIL EKSPERIMEN "
+        "PEMBAGIAN DATA 70:30",
+        split_70,
+    )
+
+    # Simpan peringkat 70:30
+    split_70_path = (
+        EVALUATION_DIR
+        / "evaluation_rank_70_30.csv"
+    )
+
+    split_70.to_csv(
+        split_70_path,
+        index=False,
+    )
+
+    # TABEL 4: PERINGKAT SPLIT 80:20
+    split_80 = results_df[
+        results_df["split"] == "80_20"
+    ].copy()
+
+    split_80 = split_80.sort_values(
+        ["RMSE", "MAE"],
+        ascending=[True, True],
+    ).reset_index(drop=True)
+
+    split_80.insert(
+        0,
+        "rank_rmse",
+        split_80["RMSE"]
+        .rank(
+            method="min",
+            ascending=True,
+        )
+        .astype(int),
+    )
+
+    split_80 = split_80[
+        comparison_columns
+    ]
+
+    display_table(
+        "TABEL 4. PERINGKAT HASIL EKSPERIMEN "
+        "PEMBAGIAN DATA 80:20",
+        split_80,
+    )
+
+    # Simpan peringkat 80:20
+    split_80_path = (
+        EVALUATION_DIR
+        / "evaluation_rank_80_20.csv"
+    )
+
+    split_80.to_csv(
+        split_80_path,
+        index=False,
+    )
+
+    # TABEL 5: HASIL KESELURUHAN + PERINGKAT
+    overall_results = results_df.sort_values(
+        ["RMSE", "MAE"],
+        ascending=[True, True],
+    ).reset_index(drop=True)
+
+    overall_results.insert(
+        0,
+        "rank",
+        overall_results["RMSE"]
+        .rank(method="min", ascending=True)
+        .astype(int),
+    )
+
+    overall_results = overall_results[
+        [
+            "rank",
+            "algorithm",
+            "dataset",
+            "split",
+            "total_data",
+            "MAE",
+            "MSE",
+            "RMSE",
+            "R2",
+        ]
+    ]
+
+    display_table(
+        "TABEL 5. HASIL EVALUASI KESELURUHAN "
+        "(PERINGKAT BERDASARKAN RMSE)",
+        overall_results,
+    )
+
+    # Simpan peringkat keseluruhan
+    overall_path = (
+        EVALUATION_DIR
+        / "evaluation_rank_overall.csv"
+    )
+
+    overall_results.to_csv(
+        overall_path,
+        index=False,
+    )
+
+    # SIMPAN SELURUH HASIL EVALUASI
     output_path = (
         EVALUATION_DIR
         / "evaluation_results.csv"
@@ -250,23 +456,14 @@ def run_evaluation():
         output_path,
         index=False,
     )
-    print("")
 
-    # TAMPILKAN SELURUH HASIL
-    print("HASIL EVALUASI SELURUH MODEL")
-
-    print(
-        results_df.to_string(
-            index=False,
-            float_format=lambda value: f"{value:.6f}",
-        )
+    return (
+        results_df,
+        xgboost_results,
+        svr_results,
+        split_70,
+        split_80,
     )
-
-   
-    print("")
-
-    return results_df
-
 
 # MAIN
 if __name__ == "__main__":

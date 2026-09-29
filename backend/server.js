@@ -6,7 +6,6 @@ import pool from "./db.js";
 import authRoutes from "./routes/authRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
-import weatherRoutes from "./routes/weatherRoutes.js";
 
 dotenv.config();
 

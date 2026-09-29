@@ -7,10 +7,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 
-# ==========================================
 # 1. KONFIGURASI
-# ==========================================
-
 LATITUDES = [
     -6.199997, -5.7986665, -6.002, -6.5999985,
     -6.656, -6.0606, -5.745, -6.319,
@@ -44,27 +41,21 @@ FEATURES = [
 ]
 
 
-# ==========================================
 # 2. LOKASI MODEL
-# ==========================================
-
 ML_DIR = Path(__file__).resolve().parents[1]
 
 MODEL_PATH = (
     ML_DIR
     / "models"
     / "svr"
-    / "svr_no2_meteorologi_70_30.joblib"
+    / "svr_no2_meteorologi_80_20.joblib"
 )
 
 OUTPUT_DIR = ML_DIR / "results" / "predictions"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# ==========================================
 # 3. REQUEST API
-# ==========================================
-
 def fetch_api(url, params):
     response = requests.get(
         url,
@@ -77,10 +68,7 @@ def fetch_api(url, params):
     return response.json()
 
 
-# ==========================================
 # 4. AMBIL DATA NO2 HOURLY
-# ==========================================
-
 def fetch_no2():
     params = {
         "latitude": ",".join(map(str, LATITUDES)),
@@ -114,10 +102,7 @@ def fetch_no2():
     return pd.DataFrame(rows)
 
 
-# ==========================================
 # 5. AMBIL DATA METEOROLOGI HOURLY
-# ==========================================
-
 def fetch_weather():
     params = {
         "latitude": ",".join(map(str, LATITUDES)),
@@ -164,10 +149,7 @@ def fetch_weather():
     return pd.DataFrame(rows)
 
 
-# ==========================================
 # 6. TENTUKAN WAKTU PREDIKSI
-# ==========================================
-
 def get_target_time():
     now = datetime.now(ZoneInfo(TIMEZONE))
 
@@ -181,10 +163,7 @@ def get_target_time():
     return pd.Timestamp(target.replace(tzinfo=None))
 
 
-# ==========================================
 # 7. SIAPKAN FITUR LAG DAN CUACA
-# ==========================================
-
 def prepare_prediction_data(
     df_no2,
     df_weather,
@@ -267,9 +246,7 @@ def prepare_prediction_data(
     return pd.DataFrame(rows)
 
 
-# ==========================================
 # 8. PREDIKSI
-# ==========================================
 
 def main():
     if not MODEL_PATH.exists():
