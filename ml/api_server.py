@@ -23,52 +23,52 @@ FEATURES = [
 
 # Koordinat SAMA dengan yang dipakai saat training / script prediksi
 LOCATIONS = {
-    0: {
+    1: {
         "name": "Jakarta Timur",
         "latitude": -6.221441,
         "longitude": 106.931435,
     },
-    1: {
+    2: {
         "name": "Kepulauan Seribu",
         "latitude": -5.7996483,
         "longitude": 106.47254,
     },
-    2: {
+    3: {
         "name": "Bekasi",
         "latitude": -6.0808434,
         "longitude": 107.05342,
     },
-    3: {
+    4: {
         "name": "Bogor",
         "latitude": -6.5729346,
         "longitude": 106.47356,
     },
-    4: {
+    5: {
         "name": "Sukabumi",
         "latitude": -6.6432333,
         "longitude": 106.78992,
     },
-    5: {
+    6: {
         "name": "Tangerang",
         "latitude": -6.0808434,
         "longitude": 106.45242,
     },
-    6: {
+    7: {
         "name": "Banten Utara",
         "latitude": -5.7293496,
         "longitude": 106.60848,
     },
-    7: {
+    8: {
         "name": "Bekasi Timur",
         "latitude": -6.2917395,
         "longitude": 107.17155,
     },
-    8: {
+    9: {
         "name": "Karawang",
         "latitude": -6.4323373,
         "longitude": 106.974014,
     },
-    9: {
+    10: {
         "name": "Purwakarta",
         "latitude": -6.2917395,
         "longitude": 107.39749,

@@ -39,11 +39,14 @@ export default function Home() {
     10: "Purwakarta",
   };
 
-  const getLocationLag1 = (locationId) => {
+  const getLocationNO2 = (locationId) => {
     const item = allLocations.find(
       (row) => String(row.location_id) === String(locationId),
     );
-    return item?.LAG1 != null ? Number(item.LAG1).toFixed(2) : "-";
+
+    return item?.nitrogen_dioxide != null
+      ? Number(item.nitrogen_dioxide).toFixed(2)
+      : "-";
   };
 
   const handleSendPrediction = async () => {
@@ -68,61 +71,69 @@ export default function Home() {
         `http://localhost:5000/api/realtime?location_id=${selectedPredictionLocation}&predict=true`,
       );
 
+      const result = await response.json();
+      // console.log("HASIL PREDIKSI DARI BACKEND:", result);
+
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.message || "Gagal mengambil data prediksi.");
+        throw new Error(result.message || "Gagal mengambil data prediksi.");
       }
 
-      const result = await response.json();
+      const predictedNO2 = Number(result.predicted_nitrogen_dioxide);
 
-      if (result.predicted_nitrogen_dioxide == null) {
+      if (
+        result.predicted_nitrogen_dioxide == null ||
+        Number.isNaN(predictedNO2)
+      ) {
         throw new Error("Data prediksi tidak tersedia.");
       }
 
-      const targetTime = result.target_time.split(" ")[1].slice(0, 5);
+      const targetTimeValue = String(result.target_time || "");
 
-      // 3 nilai NO2 sebelumnya + hasil prediksi
+      const targetTime = targetTimeValue.includes("T")
+        ? targetTimeValue.split("T")[1]?.slice(0, 5)
+        : targetTimeValue.split(" ")[1]?.slice(0, 5);
+
+      if (!targetTime) {
+        throw new Error("Waktu prediksi tidak tersedia.");
+      }
+
+      // DATA GRAFIK
       const chartSeries = [
         Number(result.LAG3),
         Number(result.LAG2),
         Number(result.LAG1),
-        Number(result.predicted_nitrogen_dioxide),
+        predictedNO2,
       ].map((value) => Number(value.toFixed(2)));
 
-      // Label waktu grafik
+      // WAKTU GRAFIK
       const [hour, minute] = targetTime.split(":").map(Number);
       const targetMinutes = hour * 60 + minute;
-
       const chartCategories = [-180, -120, -60, 0].map((offset) => {
         const totalMinutes = (targetMinutes + offset + 1440) % 1440;
         const h = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
         const m = String(totalMinutes % 60).padStart(2, "0");
-
         return `${h}:${m}`;
       });
 
+      // SIMPAN HASIL PREDIKSI
       setPredictionData({
         location_id: result.location_id,
         target_time: result.target_time,
-
-        // Hasil prediksi
-        value: Number(result.predicted_nitrogen_dioxide),
+        value: predictedNO2,
         time: targetTime,
         method: "SVR",
-
-        // Data meteorologi dari API predictions
         temperature_2m: result.temperature_2m,
         wind_speed_10m: result.wind_speed_10m,
         rain: result.rain,
         relative_humidity_2m: result.relative_humidity_2m,
-
-        // Data grafik
         chartSeries,
         chartCategories,
       });
     } catch (error) {
       console.error("Gagal mendapatkan prediksi:", error);
+
       setError(error.message || "Terjadi kesalahan saat mengambil prediksi.");
+
       setPredictionData(null);
     } finally {
       setLoading(false);
@@ -150,14 +161,19 @@ export default function Home() {
         const res = await fetch(
           `http://localhost:5000/api/realtime?location_id=${selectedLocation}`,
         );
+
         if (!res.ok) throw new Error("Gagal mengambil data realtime.");
-        setCurrentLocationData(await res.json());
+
+        const data = await res.json();
+
+        console.log("DATA CURRENT WEATHER:", data);
+
+        setCurrentLocationData(data);
       } catch (err) {
         console.error(err);
         setCurrentLocationData(null);
       }
     };
-
     load();
     const timer = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(timer);
@@ -276,14 +292,14 @@ export default function Home() {
               <Flex direction={"row"} gap={"2vh"} align={"center"}>
                 <FaCloudSun size={"8vh"} />
                 <Text fontSize="xl">
-                  {currentLocationData?.LAG1 != null
-                    ? `${Number(currentLocationData.LAG1).toFixed(2)} μg/m³`
+                  {currentLocationData?.nitrogen_dioxide != null
+                    ? `${Number(currentLocationData.nitrogen_dioxide).toFixed(2)} μg/m³`
                     : "-"}
                 </Text>
               </Flex>
 
               <Text fontSize="sm">
-                Data aktual terakhir: {currentLocationData?.weather_time ?? "-"}
+                Data aktual terakhir: {currentLocationData?.time_no2 ?? "-"}
               </Text>
             </Flex>
 
@@ -304,8 +320,8 @@ export default function Home() {
               <MiniCard
                 title="Nitrogen Dioxide"
                 hasil={
-                  currentLocationData?.LAG1 != null
-                    ? `${Number(currentLocationData.LAG1).toFixed(2)} μg/m³`
+                  currentLocationData?.nitrogen_dioxide != null
+                    ? `${Number(currentLocationData.nitrogen_dioxide).toFixed(2)} μg/m³`
                     : "-"
                 }
               />
@@ -361,21 +377,19 @@ export default function Home() {
               <Flex w={"100%"} direction={"row"} gap={"2vh"}>
                 <MiniCardLocation
                   location="Jakarta Timur"
-                  hasil={getLocationLag1(1)}
+                  hasil={getLocationNO2(1)}
                 />
 
-                <MiniCardLocation location="Bogor" hasil={getLocationLag1(4)} />
+                <MiniCardLocation location="Bogor" hasil={getLocationNO2(4)} />
               </Flex>
 
               <Flex w={"100%"} direction={"row"} gap={"2vh"}>
                 <MiniCardLocation
                   location="Tangerang"
-                  hasil={getLocationLag1(6)}
-                />{" "}
-                <MiniCardLocation
-                  location="Bekasi"
-                  hasil={getLocationLag1(3)}
+                  hasil={getLocationNO2(6)}
                 />
+
+                <MiniCardLocation location="Bekasi" hasil={getLocationNO2(3)} />
               </Flex>
             </Flex>
           </Flex>

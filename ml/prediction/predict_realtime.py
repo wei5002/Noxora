@@ -9,15 +9,29 @@ from zoneinfo import ZoneInfo
 
 # 1. KONFIGURASI
 LATITUDES = [
-    -6.199997, -5.7986665, -6.002, -6.5999985,
-    -6.656, -6.0606, -5.745, -6.319,
-    -6.402, -6.2999954,
+    -6.199997,
+    -5.7986665,
+    -6.002,
+    -6.5999985,
+    -6.656,
+    -6.0606,
+    -5.745,
+    -6.319,
+    -6.402,
+    -6.2999954,
 ]
 
 LONGITUDES = [
-    106.899994, 106.4990656, 107.002, 106.5,
-    106.844, 106.4242, 106.613, 107.163,
-    106.97, 107.399994,
+    106.899994,
+    106.4990656,
+    107.002,
+    106.5,
+    106.844,
+    106.4242,
+    106.613,
+    107.163,
+    106.97,
+    107.399994,
 ]
 
 AIR_QUALITY_URL = (
@@ -160,7 +174,10 @@ def get_target_time():
         microsecond=0
     ) + timedelta(hours=1)
 
-    return pd.Timestamp(target.replace(tzinfo=None))
+    # Hilangkan timezone agar konsisten dengan data API
+    target = target.replace(tzinfo=None)
+
+    return pd.Timestamp(target)
 
 
 # 7. SIAPKAN FITUR LAG DAN CUACA
@@ -211,36 +228,45 @@ def prepare_prediction_data(
                 previous.iloc[0]["nitrogen_dioxide"]
             )
 
-            # Data meteorologi satu jam sebelum waktu target.
-            weather_time = target_time - pd.Timedelta(hours=1)
+        # DATA METEOROLOGI
+        weather_time = (
+            target_time - pd.Timedelta(hours=1)
+        )
 
-            target_weather = location_data[
-                location_data["time"] == weather_time
-            ]
+        target_weather = location_data[
+            location_data["time"] == weather_time
+        ]
 
         if target_weather.empty:
             raise ValueError(
                 f"Data meteorologi lokasi {location_id} "
-                f"pada {target_time} tidak tersedia."
+                f"pada {weather_time} tidak tersedia."
             )
 
         weather = target_weather.iloc[0]
-
+        # SIMPAN DATA
         rows.append({
             "location_id": location_id,
+            # Simpan sebagai waktu lengkap
             "target_time": target_time,
+            # Weather satu jam sebelum target
             "weather_time": weather_time,
 
             "LAG1": lag_values[0],
             "LAG2": lag_values[1],
             "LAG3": lag_values[2],
-            
-            "temperature_2m": weather["temperature_2m"],
+            "temperature_2m": weather[
+                "temperature_2m"
+            ],
             "relative_humidity_2m": weather[
                 "relative_humidity_2m"
             ],
-            "rain": weather["rain"],
-            "wind_speed_10m": weather["wind_speed_10m"],
+            "rain": weather[
+                "rain"
+            ],
+            "wind_speed_10m": weather[
+                "wind_speed_10m"
+            ],
         })
 
     return pd.DataFrame(rows)
@@ -263,37 +289,69 @@ def main():
     print("Mengambil data meteorologi...")
     df_weather = fetch_weather()
 
+    # WAKTU TARGET
     target_time = get_target_time()
 
-    print(f"\nTarget prediksi: {target_time}")
-
-    print("Menyiapkan fitur prediksi...")
+    print(
+        f"\nTarget prediksi: "
+        f"{target_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    )
+    # SIAPKAN DATA
+    # print("Menyiapkan fitur prediksi...")
     X = prepare_prediction_data(
         df_no2,
         df_weather,
         target_time
     )
 
-    # Pastikan urutan fitur sama dengan training.
-    predictions = model.predict(X[FEATURES])
+    # PREDIKSI
+    predictions = model.predict(
+        X[FEATURES]
+    )
 
     X["predicted_nitrogen_dioxide"] = predictions
 
-    output_file = (
-        OUTPUT_DIR / "svr_realtime_predictions.csv"
+    # PASTIKAN FORMAT WAKTU
+    X["target_time"] = X["target_time"].apply(
+        lambda x: x.strftime("%Y-%m-%d %H:%M:%S")
+    )
+    X["weather_time"] = X["weather_time"].apply(
+        lambda x: x.strftime("%Y-%m-%d %H:%M:%S")
     )
 
-    X.to_csv(output_file, index=False)
+    # SIMPAN CSV
+
+    output_file = (
+        OUTPUT_DIR
+        / "svr_realtime_predictions.csv"
+    )
+
+    X.to_csv(
+        output_file,
+        index=False,
+        lineterminator="\n"
+    )
 
     print("\nPrediksi selesai!")
     print(X.to_string(index=False))
-    print(f"\nHasil tersimpan di: {output_file}")
+    print(
+        f"\nHasil tersimpan di: "
+        f"{output_file}"
+    )
 
-
+# 9. JALANKAN PROGRAM
 if __name__ == "__main__":
     try:
         main()
     except requests.RequestException as error:
-        print(f"Gagal mengambil API: {error}")
-    except (ValueError, KeyError, IndexError) as error:
-        print(f"Terjadi kesalahan: {error}")
+        print(
+            f"Gagal mengambil API: {error}"
+        )
+    except (
+        ValueError,
+        KeyError,
+        IndexError
+    ) as error:
+        print(
+            f"Terjadi kesalahan: {error}"
+        )
