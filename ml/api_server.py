@@ -1,26 +1,27 @@
 from pathlib import Path
-import json
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
+import joblib
 import pandas as pd
+import requests
 from fastapi import FastAPI, HTTPException
-from urllib.request import urlopen
-from urllib.parse import urlencode
 
-
-# FASTAPI APP
 app = FastAPI()
 
-# PATH PREDICTION CSV
 ML_DIR = Path(__file__).resolve().parent
+MODEL_PATH = ML_DIR / "models" / "svr" / "svr_no2_meteorologi_80_20.joblib"
+TIMEZONE = "Asia/Jakarta"
 
-CSV_PATH = (
-    ML_DIR
-    / "results"
-    / "predictions"
-    / "svr_realtime_predictions.csv"
-)
+AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
+WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 
-# LOCATION CONFIGURATION
+FEATURES = [
+    "LAG1", "LAG2", "LAG3",
+    "temperature_2m", "relative_humidity_2m", "rain", "wind_speed_10m",
+]
+
+# Koordinat SAMA dengan yang dipakai saat training / script prediksi
 LOCATIONS = {
     0: {
         "name": "Jakarta Timur",
@@ -74,134 +75,98 @@ LOCATIONS = {
     },
 }
 
-# ENDPOINT: PREDICTIONS
-@app.get("/predictions")
-def get_predictions():
-    if not CSV_PATH.exists():
-        raise HTTPException(
-            status_code=404,
-            detail=f"File tidak ditemukan: {CSV_PATH}",
-        )
+# Model dimuat sekali saat server start
+if not MODEL_PATH.exists():
+    raise FileNotFoundError(f"Model tidak ditemukan: {MODEL_PATH}")
+model = joblib.load(MODEL_PATH)
 
-    try:
-        df = pd.read_csv(CSV_PATH)
 
-        # Mengubah NaN menjadi None agar bisa dikirim sebagai JSON
-        df = df.astype(object).where(pd.notna(df), None)
-
-        return df.to_dict(orient="records")
-
-    except Exception as error:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Gagal membaca file prediksi: {error}",
-        )
-
-# ENDPOINT: CURRENT WEATHER
-@app.get("/current-weather")
-def get_current_weather(location_id: int = 1):
-
-    # Cari konfigurasi lokasi berdasarkan ID
-    location = LOCATIONS.get(location_id)
-
-    if not location:
-        raise HTTPException(
-            status_code=404,
-            detail="Lokasi tidak ditemukan.",
-        )
-
-    latitude = location["latitude"]
-    longitude = location["longitude"]
-
-    # Pastikan koordinat sudah diisi
-    if latitude is None or longitude is None:
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                f"Koordinat untuk {location['name']} "
-                "belum dikonfigurasi."
-            ),
-        )
-
-    # OPEN-METEO WEATHER API
-    weather_params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "current": (
-            "temperature_2m,"
-            "relative_humidity_2m,"
-            "rain,"
-            "wind_speed_10m"
-        ),
-        "wind_speed_unit": "kmh",
-        "timezone": "Asia/Jakarta",
+def fetch_hourly(url, hourly_vars, ids, extra=None):
+    params = {
+        "latitude": ",".join(str(LOCATIONS[i]["latitude"]) for i in ids),
+        "longitude": ",".join(str(LOCATIONS[i]["longitude"]) for i in ids),
+        "hourly": hourly_vars,
+        "past_days": 1,
+        "forecast_days": 1,
+        "timezone": TIMEZONE,
     }
+    if extra:
+        params.update(extra)
 
-    weather_url = (
-        "https://api.open-meteo.com/v1/forecast?"
-        + urlencode(weather_params)
+    r = requests.get(url, params=params, timeout=30)
+    r.raise_for_status()
+    data = r.json()
+    return data if isinstance(data, list) else [data]
+
+
+def build_rows(ids):
+    now = datetime.now(ZoneInfo(TIMEZONE))
+    target = now.replace(minute=0, second=0, microsecond=0, tzinfo=None) + timedelta(hours=1)
+    key = lambda h: (target - timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M")
+
+    air = fetch_hourly(AIR_QUALITY_URL, "nitrogen_dioxide", ids)
+    wx = fetch_hourly(
+        WEATHER_URL,
+        "temperature_2m,relative_humidity_2m,rain,wind_speed_10m",
+        ids,
+        {"wind_speed_unit": "kmh"},
     )
 
-    # OPEN-METEO AIR QUALITY API
-    air_params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "current": "nitrogen_dioxide",
-        "timezone": "Asia/Jakarta",
-    }
+    rows = []
+    for loc_id, a, w in zip(ids, air, wx):
+        no2 = dict(zip(a["hourly"]["time"], a["hourly"]["nitrogen_dioxide"]))
+        wh = w["hourly"]
+        idx = wh["time"].index(key(1))  # cuaca 1 jam sebelum target (= jam sekarang)
 
-    air_url = (
-         "https://air-quality-api.open-meteo.com/v1/air-quality?"
-        + urlencode(air_params)
-    )
-
-    try:
-        # Ambil data cuaca
-        with urlopen(weather_url, timeout=30) as response:
-            weather_data = json.loads(
-                response.read().decode("utf-8")
-            )
-
-        # Ambil data kualitas udara
-        with urlopen(air_url, timeout=30) as response:
-            air_data = json.loads(
-                response.read().decode("utf-8")
-            )
-
-        weather = weather_data.get("current", {})
-        air = air_data.get("current", {})
-
-        if not weather:
-            raise ValueError(
-                "Data cuaca terkini tidak tersedia."
-            )
-
-        if not air:
-            raise ValueError(
-                "Data kualitas udara terkini tidak tersedia."
-            )
-
-        return {
-            "location_id": location_id,
-            "location_name": location["name"],
-            "time": weather.get("time"),
-            "nitrogen_dioxide": air.get("nitrogen_dioxide"),
-            "temperature_2m": weather.get("temperature_2m"),
-            "wind_speed_10m": weather.get("wind_speed_10m"),
-            "rain": weather.get("rain"),
-            "relative_humidity_2m": weather.get(
-                "relative_humidity_2m"
-            ),
+        row = {
+            "location_id": loc_id,
+            "location_name": LOCATIONS[loc_id]["name"],
+            "fetched_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "target_time": target.strftime("%Y-%m-%d %H:%M:%S"),
+            "weather_time": (target - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "LAG1": no2.get(key(1)),
+            "LAG2": no2.get(key(2)),
+            "LAG3": no2.get(key(3)),
+            "temperature_2m": wh["temperature_2m"][idx],
+            "relative_humidity_2m": wh["relative_humidity_2m"][idx],
+            "rain": wh["rain"][idx],
+            "wind_speed_10m": wh["wind_speed_10m"][idx],
         }
 
-    except HTTPException:
-        raise
+        if any(row[f] is None for f in FEATURES):
+            raise ValueError(f"Data realtime lokasi {loc_id} belum lengkap dari Open-Meteo.")
+        rows.append(row)
 
-    except Exception as error:
-        raise HTTPException(
-            status_code=502,
-            detail=(
-                "Gagal mengambil data dari Open-Meteo: "
-                f"{error}"
-            ),
-        )
+    return rows
+
+
+def add_prediction(rows):
+    df = pd.DataFrame(rows)
+    preds = model.predict(df[FEATURES])  # urutan fitur sama dengan training
+    for row, p in zip(rows, preds):
+        row["predicted_nitrogen_dioxide"] = float(p)
+    return rows
+
+
+def run(ids, predict):
+    try:
+        rows = build_rows(ids)
+        return add_prediction(rows) if predict else rows
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=f"Gagal mengambil data Open-Meteo: {e}")
+    except (ValueError, KeyError, IndexError) as e:
+        raise HTTPException(status_code=502, detail=f"Data realtime tidak lengkap: {e}")
+
+
+# Satu lokasi: data realtime (+ prediksi jika predict=true)
+@app.get("/realtime")
+def realtime(location_id: int = 1, predict: bool = False):
+    if location_id not in LOCATIONS:
+        raise HTTPException(status_code=404, detail="Lokasi tidak ditemukan.")
+    return run([location_id], predict)[0]
+
+
+# Semua lokasi: untuk kartu kecil (Jakarta Timur, Bogor, dst.)
+@app.get("/realtime-all")
+def realtime_all():
+    return run(list(LOCATIONS.keys()), predict=False)

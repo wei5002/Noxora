@@ -40,21 +40,21 @@ app.get("/test-db", async (req, res) => {
   }
 });
 
-app.get("/api/predictions", async (req, res) => {
+// REALTIME (proxy ke FastAPI)
+const FASTAPI = "http://127.0.0.1:8000";
+
+async function proxy(path, req, res) {
   try {
-    const response = await fetch(
-      "http://127.0.0.1:8000/predictions"
-    );
+    const qs = new URLSearchParams(req.query).toString();
+    const response = await fetch(`${FASTAPI}${path}${qs ? `?${qs}` : ""}`);
+    const body = await response.json();
 
     if (!response.ok) {
       return res.status(response.status).json({
-        message: "Gagal mengambil data prediksi dari FastAPI",
+        message: body.detail || "Gagal mengambil data dari FastAPI",
       });
     }
-
-    const predictions = await response.json();
-
-    res.json(predictions);
+    res.json(body);
   } catch (error) {
     console.error("Gagal terhubung ke FastAPI:", error);
 
@@ -62,8 +62,10 @@ app.get("/api/predictions", async (req, res) => {
       message: "FastAPI tidak dapat diakses",
     });
   }
-});
+}
 
+app.get("/api/realtime", (req, res) => proxy("/realtime", req, res));
+app.get("/api/realtime-all", (req, res) => proxy("/realtime-all", req, res));
 
 // ROUTES
 app.use("/", authRoutes);

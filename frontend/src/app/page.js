@@ -23,11 +23,8 @@ export default function Home() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [allPredictions, setAllPredictions] = useState([]);
-
-  const currentLocationData = allPredictions.find(
-    (item) => String(item.location_id) === String(selectedLocation),
-  );
+  const [currentLocationData, setCurrentLocationData] = useState(null);
+  const [allLocations, setAllLocations] = useState([]);
 
   const locationNames = {
     1: "Jakarta Timur",
@@ -43,10 +40,9 @@ export default function Home() {
   };
 
   const getLocationLag1 = (locationId) => {
-    const item = allPredictions.find(
+    const item = allLocations.find(
       (row) => String(row.location_id) === String(locationId),
     );
-
     return item?.LAG1 != null ? Number(item.LAG1).toFixed(2) : "-";
   };
 
@@ -59,7 +55,6 @@ export default function Home() {
       return;
     }
 
-    // Cek apakah lokasi sudah dipilih
     if (!selectedPredictionLocation) {
       setError("Silakan pilih lokasi terlebih dahulu.");
       return;
@@ -69,30 +64,19 @@ export default function Home() {
       setLoading(true);
       setError("");
 
-      const response = await fetch("http://localhost:5000/api/predictions");
-
-      if (!response.ok) {
-        throw new Error("Gagal mengambil data prediksi.");
-      }
-
-      const data = await response.json();
-
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error("Data prediksi tidak tersedia.");
-      }
-
-      setAllPredictions(data);
-
-      // Ambil hasil prediksi sesuai lokasi yang dipilih
-      const result = data.find(
-        (item) =>
-          String(item.location_id) === String(selectedPredictionLocation),
+      const response = await fetch(
+        `http://localhost:5000/api/realtime?location_id=${selectedPredictionLocation}&predict=true`,
       );
 
-      if (!result) {
-        throw new Error(
-          "Data prediksi untuk lokasi yang dipilih tidak ditemukan.",
-        );
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || "Gagal mengambil data prediksi.");
+      }
+
+      const result = await response.json();
+
+      if (result.predicted_nitrogen_dioxide == null) {
+        throw new Error("Data prediksi tidak tersedia.");
       }
 
       const targetTime = result.target_time.split(" ")[1].slice(0, 5);
@@ -159,23 +143,42 @@ export default function Home() {
     }
   }, []);
 
+  // Data realtime untuk lokasi yang dipilih di kartu "Current Weather"
   useEffect(() => {
-    const fetchPredictions = async () => {
+    const load = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/predictions");
-
-        if (!response.ok) {
-          throw new Error("Gagal mengambil data prediksi.");
-        }
-
-        const data = await response.json();
-        setAllPredictions(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Gagal mengambil data lokasi:", error);
+        const res = await fetch(
+          `http://localhost:5000/api/realtime?location_id=${selectedLocation}`,
+        );
+        if (!res.ok) throw new Error("Gagal mengambil data realtime.");
+        setCurrentLocationData(await res.json());
+      } catch (err) {
+        console.error(err);
+        setCurrentLocationData(null);
       }
     };
 
-    fetchPredictions();
+    load();
+    const timer = setInterval(load, 5 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [selectedLocation]);
+
+  // Data realtime semua lokasi untuk kartu kecil
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/realtime-all");
+        if (!res.ok) return;
+        const data = await res.json();
+        setAllLocations(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    load();
+    const timer = setInterval(load, 5 * 60 * 1000);
+    return () => clearInterval(timer);
   }, []);
 
   return (
@@ -481,7 +484,7 @@ export default function Home() {
                   borderRadius={"4vh"}
                   bg={"button.primary"}
                   onClick={handleSendPrediction}
-                  isLoading={loading}
+                  loading={loading}
                   _hover={{ bg: "hover.primary" }}
                 >
                   Send
