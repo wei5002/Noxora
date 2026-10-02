@@ -68,7 +68,7 @@ export default function PredictionChart({ data }) {
       `}</style>
 
       <Flex
-        w={{ base: "100%", md: "59%" }}
+        w={{ base: "100%", md: "100%" }}
         direction="column"
         p={"2.5vh"}
         boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"

@@ -201,76 +201,67 @@ export default function Home() {
     <Flex
       direction={"column"}
       w={"100%"}
-      bg={"bg.gradient"}
       minH={"100vh"}
-      gap={{ base: "0", lg: "3vh" }}
-      justify={"center"}
+      bg={"bg.gradient"}
       align={"center"}
     >
       <Flex
+        direction={"column"}
         w={"100%"}
-        direction={"row"}
-        gap={"15vh"}
-        justify={"center"}
+        align={"center"}
+        gap={{ base: "4vh", lg: "5vh" }}
         py={"4vh"}
       >
         <Flex
           direction={{
-            xl: "row",
-            lg: "column",
-            md: "column",
-            sm: "column",
-            xs: "column",
             base: "column",
+            sm: "column",
+            md: "column",
+            lg: "column",
+            xl: "row",
           }}
+          w="90%"
           mt={{
-            xl: "12vh",
-            lg: "12vh",
-            md: "12vh",
-            sm: "16vh",
-            xs: "16vh",
             base: "16vh",
+            sm: "16vh",
+            md: "12vh",
+            lg: "12vh",
+            xl: "12vh",
           }}
-          w={"90%"}
-          justify={"center"}
-          gap={"3vh"}
+          gap="3vh"
+          align="stretch"
         >
-          {/* Current Weather */}
+          {/* CURRENT WEATHER */}
+
           <Flex
             w={{
-              xl: "50%",
-              lg: "100%",
-              md: "100%",
-              sm: "100%",
-              xs: "100%",
               base: "100%",
+              sm: "100%",
+              md: "100%",
+              lg: "100%",
+              xl: "50%",
             }}
-            gap={"2vh"}
-            direction={"column"}
+            direction="column"
+            gap="2vh"
           >
+            {/* Current Weather */}
             <Flex
               w={"100%"}
               p={"2.5vh"}
               borderRadius={"2vh"}
               bg={"bg.secondary"}
-              boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+              boxShadow={"0 4px 12px rgba(0, 0, 0, 0.2)"}
               direction={"column"}
-              gap={"2vh"}
-              h={"100%"}
-              justify={"space-between"}
+              gap="2vh"
+              justify="space-between"
             >
-              <Flex direction={"column"}>
-                <Flex justify={"space-between"}>
-                  <Text fontSize={"sm"} color={"text.thrid"}>
+              <Flex direction="column">
+                <Flex justify="space-between" align="center">
+                  <Text fontSize="sm" color="text.thrid">
                     Current Weather
                   </Text>
 
-                  <Flex
-                    w={"30vh"}
-                    direction={"row"}
-                    gap={"1vh"}
-                    align={"center"}
-                  >
+                  <Flex w="30vh" direction="row" gap="1vh" align="center">
                     <FaLocationDot />
                     <ComboBoxDashboard
                       value={selectedLocation}
@@ -289,11 +280,14 @@ export default function Home() {
                 </Text>
               </Flex>
 
-              <Flex direction={"row"} gap={"2vh"} align={"center"}>
-                <FaCloudSun size={"8vh"} />
+              <Flex direction="row" gap="2vh" align="center">
+                <FaCloudSun size="8vh" />
+
                 <Text fontSize="xl">
                   {currentLocationData?.nitrogen_dioxide != null
-                    ? `${Number(currentLocationData.nitrogen_dioxide).toFixed(2)} μg/m³`
+                    ? `${Number(currentLocationData.nitrogen_dioxide).toFixed(
+                        2,
+                      )} μg/m³`
                     : "-"}
                 </Text>
               </Flex>
@@ -303,6 +297,7 @@ export default function Home() {
               </Text>
             </Flex>
 
+            {/* Mini Cards */}
             <Grid
               w="100%"
               templateColumns={{
@@ -321,7 +316,9 @@ export default function Home() {
                 title="Nitrogen Dioxide"
                 hasil={
                   currentLocationData?.nitrogen_dioxide != null
-                    ? `${Number(currentLocationData.nitrogen_dioxide).toFixed(2)} μg/m³`
+                    ? `${Number(currentLocationData.nitrogen_dioxide).toFixed(
+                        2,
+                      )} μg/m³`
                     : "-"
                 }
               />
@@ -329,7 +326,9 @@ export default function Home() {
                 title="Temperature"
                 hasil={
                   currentLocationData?.temperature_2m != null
-                    ? `${Number(currentLocationData.temperature_2m).toFixed(2)} °C`
+                    ? `${Number(currentLocationData.temperature_2m).toFixed(
+                        2,
+                      )} °C`
                     : "-"
                 }
               />
@@ -338,7 +337,9 @@ export default function Home() {
                 title="Wind Speed"
                 hasil={
                   currentLocationData?.wind_speed_10m != null
-                    ? `${Number(currentLocationData.wind_speed_10m).toFixed(2)} km/h`
+                    ? `${Number(currentLocationData.wind_speed_10m).toFixed(
+                        2,
+                      )} km/h`
                     : "-"
                 }
               />
@@ -356,25 +357,27 @@ export default function Home() {
                 title="Relative Humidity"
                 hasil={
                   currentLocationData?.relative_humidity_2m != null
-                    ? `${Number(currentLocationData.relative_humidity_2m).toFixed(2)}%`
+                    ? `${Number(
+                        currentLocationData.relative_humidity_2m,
+                      ).toFixed(2)}%`
                     : "-"
                 }
               />
             </Grid>
 
+            {/* Location Cards */}
             <Flex
-              w={"100%"}
-              gap={"2vh"}
+              w="100%"
+              gap="2vh"
               direction={{
-                xl: "row",
-                lg: "row",
-                md: "row",
-                sm: "column",
-                xs: "column",
                 base: "column",
+                sm: "column",
+                md: "row",
+                lg: "row",
+                xl: "row",
               }}
             >
-              <Flex w={"100%"} direction={"row"} gap={"2vh"}>
+              <Flex w="100%" direction="row" gap="2vh">
                 <MiniCardLocation
                   location="Jakarta Timur"
                   hasil={getLocationNO2(1)}
@@ -383,7 +386,7 @@ export default function Home() {
                 <MiniCardLocation location="Bogor" hasil={getLocationNO2(4)} />
               </Flex>
 
-              <Flex w={"100%"} direction={"row"} gap={"2vh"}>
+              <Flex w="100%" direction="row" gap="2vh">
                 <MiniCardLocation
                   location="Tangerang"
                   hasil={getLocationNO2(6)}
@@ -394,45 +397,57 @@ export default function Home() {
             </Flex>
           </Flex>
 
-          {/* Prediction */}
+          {/* PREDICTION */}
+
           <Flex
             w={{
-              xl: "50%",
-              lg: "100%",
-              md: "100%",
-              sm: "100%",
-              xs: "100%",
               base: "100%",
+              sm: "100%",
+              md: "100%",
+              lg: "100%",
+              xl: "50%",
             }}
-            direction={"column"}
-            gap={"2vh"}
+            direction="column"
+            gap="2vh"
+            minW="0"
           >
+            {/* Prediction Input */}
             <Flex
-              p={"2.5vh"}
+              w="100%"
+              p="2.5vh"
               boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
-              borderRadius={"2vh"}
-              bg={"bg.secondary"}
-              gap={"2vh"}
-              direction={"column"}
+              borderRadius="2vh"
+              bg="bg.secondary"
+              gap="2vh"
+              direction="column"
             >
-              <Flex pb={"0.5vh"} borderBottom={"1px solid #dfdddd"}>
-                <Text fontWeight={"bold"} color={"text.fouth"}>
+              <Flex pb="0.5vh" borderBottom="1px solid #dfdddd">
+                <Text fontWeight="bold" color="text.fouth">
                   Prediction Nitrogen Dioxide
                 </Text>
               </Flex>
 
               <Flex
-                direction={{ base: "column", md: "row" }}
-                gap={"2vh"}
-                justify={"space-between"}
+                direction={{
+                  base: "column",
+                  md: "row",
+                }}
+                gap="2vh"
+                justify="space-between"
               >
-                <Flex direction={"column"} w={{ base: "100%", md: "45%" }}>
-                  <Text w={"20vh"} fontSize={"sm"} fontWeight={"bold"}>
+                <Flex
+                  direction="column"
+                  w={{
+                    base: "100%",
+                    md: "45%",
+                  }}
+                >
+                  <Text w="20vh" fontSize="sm" fontWeight="bold">
                     Location
                   </Text>
 
                   <ComboBoxDashboard
-                    w={"100%"}
+                    w="100%"
                     value={selectedPredictionLocation}
                     onValueChange={setSelectedPredictionLocation}
                   />
@@ -463,7 +478,7 @@ export default function Home() {
                 </Flex>
               </Flex>
 
-              <Flex direction={"row"} gap={"2vh"} justify={"space-between"}>
+              <Flex direction="row" gap="2vh" justify="space-between">
                 <InputPrediction
                   title="Rain"
                   placeholder="Rain..."
@@ -474,6 +489,7 @@ export default function Home() {
                   }
                   satuan="mm"
                 />
+
                 <InputPrediction
                   title="Relative Humidity"
                   placeholder="Relative Humidity..."
@@ -487,19 +503,21 @@ export default function Home() {
               </Flex>
 
               <Flex
-                justify={"center"}
-                align={"center"}
-                direction={"column"}
-                gap={"1vh"}
+                justify="center"
+                align="center"
+                direction="column"
+                gap="1vh"
               >
                 <Button
-                  w={"15vh"}
-                  h={"4.5vh"}
-                  borderRadius={"4vh"}
-                  bg={"button.primary"}
+                  w="15vh"
+                  h="4.5vh"
+                  borderRadius="4vh"
+                  bg="button.primary"
                   onClick={handleSendPrediction}
                   loading={loading}
-                  _hover={{ bg: "hover.primary" }}
+                  _hover={{
+                    bg: "hover.primary",
+                  }}
                 >
                   Send
                 </Button>
@@ -512,127 +530,180 @@ export default function Home() {
               </Flex>
             </Flex>
 
-            {/* Prediction Chart dan Result */}
+            {/* PREDICTION GRAPH + RESULT */}
             <Flex
-              h="40vh"
-              w={"100%"}
-              gap={"2vh"}
-              direction={{ base: "column", md: "row" }}
+              w="100%"
+              direction={{
+                base: "column",
+                sm: "column",
+                md: "row",
+              }}
+              gap="2vh"
+              align="stretch"
+              minW="0"
             >
-              <PredictionChart data={predictionData} />
-
+              {/* GRAPH */}
               <Flex
-                h={"100%"}
-                w={{ base: "100%", md: "42%" }}
-                direction="column"
-                p={"2.5vh"}
-                boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
-                borderRadius={"2vh"}
-                bg={"bg.secondary"}
-                gap={"2vh"}
+                flex="1"
+                minW="0"
+                w="100%"
+                h={"40vh"}
+                minH={{
+                  base: "40vh",
+                  md: "40vh",
+                }}
               >
-                <Flex pb={"0.5vh"} borderBottom={"1px solid #dfdddd"}>
-                  <Text fontWeight={"bold"} color={"text.fouth"}>
+                <PredictionChart data={predictionData} />
+              </Flex>
+
+              {/* RESULT */}
+              <Flex
+                w={{
+                  base: "100%",
+                  md: "42%",
+                }}
+                minW="0"
+                minH={{
+                  base: "40vh",
+                  md: "40vh",
+                }}
+                direction="column"
+                p="2.5vh"
+                boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                borderRadius="2vh"
+                bg="bg.secondary"
+                gap="2vh"
+              >
+                <Flex pb="0.5vh" borderBottom="1px solid #dfdddd">
+                  <Text fontWeight="bold" color="text.fouth">
                     Prediction Result
                   </Text>
                 </Flex>
 
-                <Flex
-                  w={"100%"}
-                  direction={"column"}
-                  gap={"1vh"}
-                  justify={"space-between"}
-                >
-                  <Text fontSize={"sm"} color={"text.thrid"}>
-                    Prediksi Berikut:
-                  </Text>
-
+                <Flex w="100%" direction="column" gap="1vh">
                   <Flex
-                    direction={"row"}
-                    gap={"2vh"}
-                    align={"center"}
-                    justify={"center"}
+                    direction={{
+                      base: "column",
+                      sm: "column",
+                      md: "row",
+                    }}
+                    gap="1vh"
+                    align={{
+                      base: "flex-start",
+                      md: "center",
+                    }}
                   >
-                    <Text
-                      fontSize={"5xl"}
-                      fontWeight={"bold"}
-                      color={"text.fouth"}
-                    >
-                      {predictionData
-                        ? Number(predictionData.value).toFixed(2)
-                        : "-"}
+                    <Text fontSize="sm" color="text.thrid">
+                      Prediksi NO₂ Jam:
                     </Text>
 
-                    {predictionData && (
-                      <Text fontSize={"sm"} color={"text.thrid"}>
-                        μg/m³
-                      </Text>
-                    )}
+                    <Text fontSize="lg" color="text.thrid" fontWeight="bold">
+                      {predictionData ? predictionData.time : "-"}
+                    </Text>
                   </Flex>
 
-                  <Flex w={"100%"} direction={"row"} gap={"2vh"} mt={"1.5vh"}>
+                  <Flex w="100%" direction="column" gap="2vh" mt="1.5vh">
+                    {/* SVR */}
                     <Flex
-                      w={"50%"}
-                      bg={"card.primary"}
-                      p={"1.5vh"}
-                      borderRadius={"2vh"}
+                      // h={"full"}
+                      w="100%"
+                      bg="card.primary"
+                      py="2vh"
+                      px="1.25vh"
+                      borderRadius="2vh"
                     >
                       <Flex
-                        w={"100%"}
-                        justify={"center"}
-                        align={"center"}
-                        gap={"1vh"}
-                        direction={"column"}
+                        w="100%"
+                        justify="space-between"
+                        align="center"
+                        gap="1vh"
+                        direction="row"
                       >
                         <Text
-                          fontSize={"2xs"}
-                          textAlign={"center"}
-                          fontWeight={"bold"}
+                          fontSize="md"
+                          textAlign="center"
+                          fontWeight="bold"
                         >
-                          Waktu Prediksi
+                          SVR
                         </Text>
 
-                        <Text
-                          textAlign={"center"}
-                          fontSize={"xl"}
-                          fontWeight={"bold"}
-                          color={"text.thrid"}
+                        <Flex
+                          direction="row"
+                          gap="1vh"
+                          align="center"
+                          justify="center"
                         >
-                          {predictionData ? predictionData.time : "-"}
-                        </Text>
+                          <Text
+                            fontSize={{
+                              base: "xl",
+                              md: "2xl",
+                            }}
+                            fontWeight="bold"
+                            color="text.fouth"
+                          >
+                            {predictionData
+                              ? Number(predictionData.value).toFixed(2)
+                              : "-"}
+                          </Text>
+
+                          {predictionData && (
+                            <Text fontSize="sm" color="text.thrid">
+                              μg/m³
+                            </Text>
+                          )}
+                        </Flex>
                       </Flex>
                     </Flex>
 
+                    {/* XGBoost */}
                     <Flex
-                      w={"50%"}
-                      bg={"card.primary"}
-                      p={"1.5vh"}
-                      borderRadius={"2vh"}
+                      // h={"full"}
+                      w="100%"
+                      bg="card.primary"
+                      py="2vh"
+                      px="1.25vh"
+                      borderRadius="2vh"
                     >
                       <Flex
-                        w={"100%"}
-                        h={"100%"}
-                        justify={"center"}
-                        direction={"column"}
-                        gap={"1vh"}
-                        align={"center"}
+                        w="100%"
+                        justify="space-between"
+                        align="center"
+                        gap="1vh"
+                        direction="row"
                       >
                         <Text
-                          fontSize={"2xs"}
-                          textAlign={"center"}
-                          fontWeight={"bold"}
+                          fontSize="md"
+                          textAlign="center"
+                          fontWeight="bold"
                         >
-                          Metode Prediksi
+                          XGBoost
                         </Text>
 
-                        <Text
-                          textAlign={"center"}
-                          fontSize={"lg"}
-                          fontWeight={"bold"}
-                          color={"text.thrid"}
+                        <Flex
+                          direction="row"
+                          gap="1vh"
+                          align="center"
+                          justify="center"
                         >
-                          {predictionData ? predictionData.method : "-"}
-                        </Text>
+                          <Text
+                            fontSize={{
+                              base: "xl",
+                              md: "2xl",
+                            }}
+                            fontWeight="bold"
+                            color="text.fouth"
+                          >
+                            {predictionData
+                              ? Number(predictionData.value).toFixed(2)
+                              : "-"}
+                          </Text>
+
+                          {predictionData && (
+                            <Text fontSize="sm" color="text.thrid">
+                              μg/m³
+                            </Text>
+                          )}
+                        </Flex>
                       </Flex>
                     </Flex>
                   </Flex>
@@ -641,83 +712,102 @@ export default function Home() {
             </Flex>
           </Flex>
         </Flex>
-      </Flex>
 
-      {/* About Noxora */}
-      <Flex
-        w={{ base: "90%", lg: "60%" }}
-        py={"4vh"}
-        px={"4vh"}
-        gap={{ base: "1vh", md: "3vh" }}
-        bg={"bg.secondary"}
-        direction={{ base: "column", md: "row" }}
-        borderRadius={"2vh"}
-        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
-      >
+        {/* ABOUT NOXORA */}
         <Flex
-          w={{ base: "100%", lg: "65%" }}
-          direction={"column"}
-          gap={"1.5vh"}
+          w={{
+            base: "90%",
+            lg: "60%",
+          }}
+          py="4vh"
+          px="4vh"
+          gap={{
+            base: "2vh",
+            md: "3vh",
+          }}
+          bg="bg.secondary"
+          direction={{
+            base: "column",
+            md: "row",
+          }}
+          borderRadius="2vh"
+          boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
         >
-          <Text
-            fontSize={"xl"}
-            fontWeight={"bold"}
-            textAlign={{ base: "center", md: "start" }}
+          <Flex
+            w={{
+              base: "100%",
+              lg: "65%",
+            }}
+            direction="column"
+            gap="1.5vh"
           >
-            Noxora
-          </Text>
+            <Text
+              fontSize="xl"
+              fontWeight="bold"
+              textAlign={{
+                base: "center",
+                md: "start",
+              }}
+            >
+              Noxora
+            </Text>
 
-          <Text fontSize={"md"} textAlign={"justify"} color={"text.thrid"}>
-            Noxora adalah aplikasi berbasis Progressive Web App (PWA) yang
-            membantu pengguna memprediksi konsentrasi nitrogen dioksida (NO₂)
-            dan memantau kualitas udara di wilayah Jabodetabek. Aplikasi ini
-            menggunakan algoritma XGBoost dan Support Vector Regression (SVR)
-            untuk menghasilkan prediksi konsentrasi NO₂ berdasarkan kondisi
-            lingkungan.
-          </Text>
+            <Text fontSize="md" textAlign="justify" color="text.thrid">
+              Noxora adalah aplikasi berbasis Progressive Web App (PWA) yang
+              membantu pengguna memprediksi konsentrasi nitrogen dioksida (NO₂)
+              dan memantau kualitas udara di wilayah Jabodetabek. Aplikasi ini
+              menggunakan algoritma XGBoost dan Support Vector Regression (SVR)
+              untuk menghasilkan prediksi konsentrasi NO₂ berdasarkan kondisi
+              lingkungan.
+            </Text>
 
-          <Text fontSize={"md"} textAlign={"justify"} color={"text.thrid"}>
-            Pengguna dapat memasukkan parameter lingkungan seperti lokasi,
-            temperatur, kecepatan angin, curah hujan, dan kelembapan relatif.
-            Hasil prediksi kemudian ditampilkan dalam bentuk nilai konsentrasi
-            NO₂ dan grafik sehingga lebih mudah dipahami.
-          </Text>
-        </Flex>
+            <Text fontSize="md" textAlign="justify" color="text.thrid">
+              Pengguna dapat memasukkan parameter lingkungan seperti lokasi,
+              temperatur, kecepatan angin, curah hujan, dan kelembapan relatif.
+              Hasil prediksi kemudian ditampilkan dalam bentuk nilai konsentrasi
+              NO₂ dan grafik sehingga lebih mudah dipahami.
+            </Text>
+          </Flex>
 
-        <Flex
-          w={{ base: "100%", md: "35%" }}
-          direction={"column"}
-          gap={"1.5vh"}
-          align={"center"}
-          justify={"center"}
-        >
-          <RiCloudWindyFill size={"30vh"} />
+          <Flex
+            w={{
+              base: "100%",
+              md: "35%",
+            }}
+            direction="column"
+            gap="1.5vh"
+            align="center"
+            justify="center"
+          >
+            <RiCloudWindyFill size="30vh" />
+          </Flex>
         </Flex>
       </Flex>
 
-      {/* Footer */}
+      {/* FOOTER */}
+
       <Flex
-        w={"100%"}
-        mt={"4vh"}
-        py={"3vh"}
-        px={"6vh"}
-        bg={"bg.secondary"}
-        direction={"column"}
-        align={"center"}
-        gap={"1vh"}
-        borderTop={"1px solid #e7e7e7"}
+        w="100%"
+        mt="2vh"
+        py="3vh"
+        px="6vh"
+        bg="bg.secondary"
+        direction="column"
+        align="center"
+        gap="1vh"
+        borderTop="1px solid #e7e7e7"
       >
-        <Text fontSize={"xl"} fontWeight={"bold"} color={"text.fouth"}>
+        <Text fontSize="xl" fontWeight="bold" color="text.fouth">
           Noxora
         </Text>
 
-        <Text fontSize={"sm"} color={"text.thrid"} textAlign={"center"}>
+        <Text fontSize="sm" color="text.thrid" textAlign="center">
           Prediksi Konsentrasi Nitrogen Dioksida (NO₂)
           <br />
           Menggunakan XGBoost dan Support Vector Regression
         </Text>
 
-        <Text fontSize={"xs"} color={"text.thrid"} mt={"1vh"}>
+        <Text fontSize="xs" color="text.thrid" mt="1vh">
           © 2026 Shirley 535230024. All rights reserved.
         </Text>
       </Flex>

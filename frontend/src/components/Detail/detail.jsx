@@ -119,7 +119,7 @@ export const MiniCardLocation = ({ location, hasil }) => {
       boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)">
       <Flex direction={"row"} align={"center"} gap={"0.5vh"} mb={"0.5vh"}>
         <FaLocationDot size={"1.75vh"} />
-        <Text fontSize={"sm"}>{location}</Text>
+        <Text fontSize={"1.85vh"}>{location}</Text>
       </Flex>
       {/* <Flex direction={"row"} justify={"center"} align={"center"} gap={"1vh"}>
         <Text fontWeight={"bold"} fontSize={"2xl"}>
