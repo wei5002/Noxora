@@ -13,26 +13,16 @@ import profileRoutes from "./routes/profileRoutes.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
 
 dotenv.config();
-
 const app = express();
-
 const PORT = process.env.PORT || 5000;
 
 // PATH
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// backend/.. = folder Noxora
-// lalu masuk ke folder ml
 const ML_DIR = path.join(__dirname, "..", "ml");
-
-// FILE CSV
-
-// Data realtime dari Open-Meteo
 const REALTIME_CSV = path.join(ML_DIR, "data", "api", "realtime_api.csv");
 
-// Hasil prediksi SVR
 const SVR_PREDICTION_CSV = path.join(
   ML_DIR,
   "results",
@@ -49,12 +39,10 @@ const XGBOOST_PREDICTION_CSV = path.join(
 );
 
 // MIDDLEWARE
-
 app.use(cors());
 app.use(express.json());
 
 // TEST BACKEND
-
 app.get("/", (req, res) => {
   res.json({
     message: "Backend Noxora berhasil berjalan!",
@@ -62,7 +50,6 @@ app.get("/", (req, res) => {
 });
 
 // TEST DATABASE
-
 app.get("/test-db", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
@@ -81,16 +68,9 @@ app.get("/test-db", async (req, res) => {
 });
 
 // MENJALANKAN PYTHON SCRIPT
-
 function runPythonScript(filename) {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(ML_DIR, "prediction", filename);
-
-    console.log("");
-    console.log("========================================");
-    console.log(`Menjalankan Python: ${filename}`);
-    console.log("========================================");
-    console.log(`Path: ${scriptPath}`);
 
     const python = spawn("python", [scriptPath], {
       cwd: ML_DIR,
@@ -106,8 +86,6 @@ function runPythonScript(filename) {
     });
 
     python.on("error", (error) => {
-      console.error("");
-      console.error(`❌ ${filename} gagal dijalankan.`);
       console.error(error);
 
       reject(error);
@@ -115,8 +93,8 @@ function runPythonScript(filename) {
 
     python.on("close", (code) => {
       if (code === 0) {
-        console.log("");
-        console.log(`✅ ${filename} selesai dijalankan.`);
+        // console.log("");
+        // console.log(`${filename} selesai dijalankan.`);
 
         resolve();
       } else {
@@ -125,7 +103,7 @@ function runPythonScript(filename) {
         );
 
         console.error("");
-        console.error(`❌ ${error.message}`);
+        console.error(`${error.message}`);
 
         reject(error);
       }
@@ -137,38 +115,16 @@ function runPythonScript(filename) {
 
 async function runMLPipeline() {
   try {
-    console.log("");
-    console.log("========================================");
-    console.log("MEMULAI ML PIPELINE NOXORA");
-    console.log("========================================");
-
-    // 1. Mengambil data hourly
     await runPythonScript("fetch_hourly_api.py");
-
-    // 2. Membuat data realtime
     await runPythonScript("fetch_realtime_api.py");
-
-    // 3. Prediksi SVR
     await runPythonScript("predict_realtime_svr.py");
-
-    // 4. Prediksi XGBoost
     await runPythonScript("predict_realtime_xgboost.py");
-
-    console.log("");
-    console.log("========================================");
-    console.log("✅ ML PIPELINE SELESAI");
-    console.log("========================================");
   } catch (error) {
-    console.error("");
-    console.error("========================================");
-    console.error("❌ ML PIPELINE GAGAL");
-    console.error("========================================");
     console.error(error.message);
   }
 }
 
 // MEMBACA FILE CSV
-
 function readCSV(filePath) {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File CSV tidak ditemukan: ${filePath}`);
@@ -186,12 +142,9 @@ function readCSV(filePath) {
   }
 
   const headers = lines[0].split(",").map((header) => header.trim());
-
   const data = lines.slice(1).map((line) => {
     const values = line.split(",").map((value) => value.trim());
-
     const row = {};
-
     headers.forEach((header, index) => {
       row[header] = values[index];
     });
@@ -203,7 +156,6 @@ function readCSV(filePath) {
 }
 
 // REALTIME ALL
-
 app.get("/api/realtime-all", async (req, res) => {
   try {
     if (!fs.existsSync(REALTIME_CSV)) {
@@ -226,16 +178,12 @@ app.get("/api/realtime-all", async (req, res) => {
 });
 
 // REALTIME BERDASARKAN LOCATION
-
 app.get("/api/realtime", async (req, res) => {
   try {
     const locationId = Number(req.query.location_id);
     const predict = req.query.predict === "true";
 
-    // ----------------------------------------------
     // VALIDASI LOCATION ID
-    // ----------------------------------------------
-
     if (!locationId) {
       return res.status(400).json({
         message: "location_id wajib diisi.",
@@ -243,11 +191,8 @@ app.get("/api/realtime", async (req, res) => {
     }
 
     // JIKA MEMINTA DATA PREDIKSI
-
     if (predict) {
-      // ----------------------------------------------
       // CEK FILE SVR
-      // ----------------------------------------------
 
       if (!fs.existsSync(SVR_PREDICTION_CSV)) {
         return res.status(404).json({
@@ -255,31 +200,15 @@ app.get("/api/realtime", async (req, res) => {
         });
       }
 
-      // ----------------------------------------------
       // CEK FILE XGBOOST
-      // ----------------------------------------------
-
       if (!fs.existsSync(XGBOOST_PREDICTION_CSV)) {
         return res.status(404).json({
           message: "Data prediksi XGBoost belum tersedia.",
         });
       }
 
-      // ----------------------------------------------
-      // BACA CSV SVR
-      // ----------------------------------------------
-
       const svrData = readCSV(SVR_PREDICTION_CSV);
-
-      // ----------------------------------------------
-      // BACA CSV XGBOOST
-      // ----------------------------------------------
-
       const xgboostData = readCSV(XGBOOST_PREDICTION_CSV);
-
-      // ----------------------------------------------
-      // CARI DATA BERDASARKAN LOCATION ID
-      // ----------------------------------------------
 
       const svrResult = svrData.find(
         (item) => Number(item.location_id) === locationId,
@@ -289,75 +218,48 @@ app.get("/api/realtime", async (req, res) => {
         (item) => Number(item.location_id) === locationId,
       );
 
-      // ----------------------------------------------
       // CEK DATA SVR
-      // ----------------------------------------------
-
       if (!svrResult) {
         return res.status(404).json({
           message: "Data prediksi SVR untuk lokasi tidak ditemukan.",
         });
       }
 
-      // ----------------------------------------------
       // CEK DATA XGBOOST
-      // ----------------------------------------------
-
       if (!xgboostResult) {
         return res.status(404).json({
           message: "Data prediksi XGBoost untuk lokasi tidak ditemukan.",
         });
       }
 
-      // ----------------------------------------------
       // GABUNGKAN HASIL
-      // ----------------------------------------------
-
       const result = {
         // Informasi lokasi
         location_id: locationId,
-
         location_name: svrResult.location_name || xgboostResult.location_name,
 
         // Waktu prediksi
         fetched_at: svrResult.fetched_at || xgboostResult.fetched_at,
-
         target_time: svrResult.target_time || xgboostResult.target_time,
-
         weather_time: svrResult.weather_time || xgboostResult.weather_time,
 
-        // ------------------------------------------
         // DATA LAG
-        // ------------------------------------------
-
         LAG1: svrResult.LAG1,
         LAG2: svrResult.LAG2,
         LAG3: svrResult.LAG3,
 
-        // ------------------------------------------
         // DATA METEOROLOGI
-        // ------------------------------------------
-
         temperature_2m: svrResult.temperature_2m,
-
         relative_humidity_2m: svrResult.relative_humidity_2m,
-
         rain: svrResult.rain,
-
         wind_speed_10m: svrResult.wind_speed_10m,
 
-        // ------------------------------------------
         // HASIL PREDIKSI SVR
-        // ------------------------------------------
-
         predicted_nitrogen_dioxide: Number(
           svrResult.predicted_nitrogen_dioxide,
         ),
 
-        // ------------------------------------------
         // HASIL PREDIKSI XGBOOST
-        // ------------------------------------------
-
         predicted_nitrogen_dioxide_xgboost: Number(
           xgboostResult.predicted_nitrogen_dioxide,
         ),
@@ -367,7 +269,6 @@ app.get("/api/realtime", async (req, res) => {
     }
 
     // JIKA HANYA MEMINTA DATA REALTIME
-
     if (!fs.existsSync(REALTIME_CSV)) {
       return res.status(404).json({
         message: "Data realtime belum tersedia.",
@@ -396,41 +297,27 @@ app.get("/api/realtime", async (req, res) => {
 });
 
 // PREDICTIONS
-
 app.get("/api/predictions", async (req, res) => {
   try {
-    // ----------------------------------------------
     // CEK SVR
-    // ----------------------------------------------
-
     if (!fs.existsSync(SVR_PREDICTION_CSV)) {
       return res.status(404).json({
         message: "Data prediksi SVR belum tersedia.",
       });
     }
 
-    // ----------------------------------------------
     // CEK XGBOOST
-    // ----------------------------------------------
-
     if (!fs.existsSync(XGBOOST_PREDICTION_CSV)) {
       return res.status(404).json({
         message: "Data prediksi XGBoost belum tersedia.",
       });
     }
 
-    // ----------------------------------------------
     // BACA DATA
-    // ----------------------------------------------
-
     const svrData = readCSV(SVR_PREDICTION_CSV);
-
     const xgboostData = readCSV(XGBOOST_PREDICTION_CSV);
 
-    // ----------------------------------------------
     // GABUNGKAN DATA
-    // ----------------------------------------------
-
     const result = svrData.map((svr) => {
       const xgboost = xgboostData.find(
         (item) => Number(item.location_id) === Number(svr.location_id),
@@ -438,30 +325,19 @@ app.get("/api/predictions", async (req, res) => {
 
       return {
         location_id: Number(svr.location_id),
-
         location_name: svr.location_name || xgboost?.location_name,
-
         fetched_at: svr.fetched_at || xgboost?.fetched_at,
-
         target_time: svr.target_time || xgboost?.target_time,
-
         weather_time: svr.weather_time || xgboost?.weather_time,
-
         LAG1: svr.LAG1,
         LAG2: svr.LAG2,
         LAG3: svr.LAG3,
-
         temperature_2m: svr.temperature_2m,
-
         relative_humidity_2m: svr.relative_humidity_2m,
-
         rain: svr.rain,
-
         wind_speed_10m: svr.wind_speed_10m,
-
         // SVR
         predicted_nitrogen_dioxide: Number(svr.predicted_nitrogen_dioxide),
-
         // XGBoost
         predicted_nitrogen_dioxide_xgboost: xgboost
           ? Number(xgboost.predicted_nitrogen_dioxide)
@@ -481,18 +357,16 @@ app.get("/api/predictions", async (req, res) => {
 });
 
 // ROUTES
-
 app.use("/", authRoutes);
 app.use("/", profileRoutes);
 app.use("/", passwordRoutes);
 
 // START SERVER
-
 app.listen(PORT, async () => {
-  console.log("");
-  console.log("========================================");
+  // console.log("");
+  // console.log("========================================");
   console.log(`Backend berjalan di http://localhost:${PORT}`);
-  console.log("========================================");
+  // console.log("========================================");
 
   await runMLPipeline();
 });
