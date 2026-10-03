@@ -50,8 +50,7 @@ export default function PredictionChart({ data }) {
 
     yaxis: {
       labels: {
-        formatter: (value) =>
-          Number(value).toFixed(2),
+        formatter: (value) => Number(value).toFixed(2),
 
         style: {
           colors: textPrimary,
@@ -62,8 +61,7 @@ export default function PredictionChart({ data }) {
 
     tooltip: {
       y: {
-        formatter: (value) =>
-          `${Number(value).toFixed(2)} μg/m³`,
+        formatter: (value) => `${Number(value).toFixed(2)} μg/m³`,
       },
     },
 
@@ -81,9 +79,7 @@ export default function PredictionChart({ data }) {
     },
   };
 
-  // ==========================================
   // 2 GARIS
-  // ==========================================
 
   const series = [
     {
@@ -117,29 +113,15 @@ export default function PredictionChart({ data }) {
         bg={"bg.secondary"}
         gap={"2vh"}
       >
-        <Flex
-          pb={"0.5vh"}
-          borderBottom={"1px solid #dfdddd"}
-        >
-          <Text
-            fontWeight={"bold"}
-            color={"text.fouth"}
-          >
+        <Flex pb={"0.5vh"} borderBottom={"1px solid #dfdddd"}>
+          <Text fontWeight={"bold"} color={"text.fouth"}>
             Prediction Graph
           </Text>
         </Flex>
 
         {hasData ? (
-          <Flex
-            mt={{ base: "-2.5vh", lg: "-1vh" }}
-            position="relative"
-          >
-            <Flex
-              w={"100%"}
-              direction={"column"}
-              gap={"2vh"}
-              h={"27vh"}
-            >
+          <Flex mt={{ base: "-2.5vh", lg: "-1vh" }} position="relative">
+            <Flex w={"100%"} direction={"column"} gap={"2vh"} h={"27vh"}>
               <Chart
                 width="100%"
                 options={options}
@@ -150,15 +132,8 @@ export default function PredictionChart({ data }) {
             </Flex>
           </Flex>
         ) : (
-          <Flex
-            h="260px"
-            align="center"
-            justify="center"
-          >
-            <Text
-              fontSize="sm"
-              color="text.thrid"
-            >
+          <Flex h="260px" align="center" justify="center">
+            <Text fontSize="sm" color="text.thrid">
               Pilih lokasi dan tekan Send untuk melihat prediksi.
             </Text>
           </Flex>

@@ -6,11 +6,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-
-# ============================================================
 # 1. KONFIGURASI
-# ============================================================
-
 LATITUDES = [
     -6.199997,
     -5.7986665,
@@ -23,7 +19,6 @@ LATITUDES = [
     -6.402,
     -6.2999954,
 ]
-
 LONGITUDES = [
     106.899994,
     106.4990656,
@@ -40,14 +35,10 @@ LONGITUDES = [
 AIR_QUALITY_URL = (
     "https://air-quality-api.open-meteo.com/v1/air-quality"
 )
-
 WEATHER_URL = (
     "https://api.open-meteo.com/v1/forecast"
 )
-
 TIMEZONE = "Asia/Jakarta"
-
-
 FEATURES = [
     "LAG1",
     "LAG2",
@@ -58,52 +49,37 @@ FEATURES = [
     "wind_speed_10m",
 ]
 
-
-# ============================================================
 # 2. LOKASI MODEL DAN OUTPUT
-# ============================================================
-
 ML_DIR = Path(__file__).resolve().parents[1]
-
 MODEL_PATH = (
     ML_DIR
     / "models"
     / "xgboost"
     / "xgboost_no2_meteorologi_80_20.joblib"
 )
-
 OUTPUT_DIR = (
     ML_DIR
     / "results"
     / "predictions"
 )
-
 OUTPUT_DIR.mkdir(
     parents=True,
     exist_ok=True
 )
 
 
-# ============================================================
 # 3. REQUEST API
-# ============================================================
-
 def fetch_api(url, params):
-
     response = requests.get(
         url,
         params=params,
         timeout=60
     )
-
     response.raise_for_status()
-
     return response.json()
 
 
-# ============================================================
 # 4. AMBIL DATA NO2 HOURLY
-# ============================================================
 
 def fetch_no2():
 
@@ -111,17 +87,12 @@ def fetch_no2():
         "latitude": ",".join(
             map(str, LATITUDES)
         ),
-
         "longitude": ",".join(
             map(str, LONGITUDES)
         ),
-
         "hourly": "nitrogen_dioxide",
-
         "past_days": 1,
-
         "forecast_days": 1,
-
         "timezone": TIMEZONE,
     }
 
@@ -154,11 +125,8 @@ def fetch_no2():
         ):
 
             rows.append({
-
                 "location_id": location_id,
-
                 "time": pd.to_datetime(time),
-
                 "nitrogen_dioxide": value,
 
             })
@@ -166,35 +134,25 @@ def fetch_no2():
     return pd.DataFrame(rows)
 
 
-# ============================================================
 # 5. AMBIL DATA METEOROLOGI HOURLY
-# ============================================================
 
 def fetch_weather():
-
     params = {
-
         "latitude": ",".join(
             map(str, LATITUDES)
         ),
-
         "longitude": ",".join(
             map(str, LONGITUDES)
         ),
-
         "hourly": (
             "temperature_2m,"
             "relative_humidity_2m,"
             "rain,"
             "wind_speed_10m"
         ),
-
         "past_days": 1,
-
         "forecast_days": 1,
-
         "timezone": TIMEZONE,
-
         "wind_speed_unit": "kmh",
     }
 
@@ -226,32 +184,20 @@ def fetch_weather():
         for i, time in enumerate(times):
 
             rows.append({
-
                 "location_id": location_id,
-
                 "time": pd.to_datetime(time),
-
                 "temperature_2m":
                     hourly["temperature_2m"][i],
-
                 "relative_humidity_2m":
                     hourly["relative_humidity_2m"][i],
-
                 "rain":
                     hourly["rain"][i],
-
                 "wind_speed_10m":
                     hourly["wind_speed_10m"][i],
-
             })
-
     return pd.DataFrame(rows)
 
-
-# ============================================================
 # 6. TENTUKAN WAKTU PREDIKSI
-# ============================================================
-
 def get_target_time():
 
     now = datetime.now(
@@ -272,10 +218,7 @@ def get_target_time():
     return pd.Timestamp(target)
 
 
-# ============================================================
 # 7. SIAPKAN FITUR PREDIKSI
-# ============================================================
-
 def prepare_prediction_data(
     df_no2,
     df_weather,
@@ -283,16 +226,12 @@ def prepare_prediction_data(
 ):
 
     df = pd.merge(
-
         df_no2,
-
         df_weather,
-
         on=[
             "location_id",
             "time"
         ],
-
         how="inner"
     )
 
@@ -319,18 +258,12 @@ def prepare_prediction_data(
             "time"
         )
 
-        # ----------------------------------------
         # LAG 1, LAG 2, LAG 3
-        # ----------------------------------------
-
         lag_times = [
-
             target_time
             - pd.Timedelta(hours=1),
-
             target_time
             - pd.Timedelta(hours=2),
-
             target_time
             - pd.Timedelta(hours=3),
 
@@ -363,10 +296,7 @@ def prepare_prediction_data(
 
             )
 
-        # ----------------------------------------
         # DATA METEOROLOGI
-        # ----------------------------------------
-
         weather_time = (
             target_time
             - pd.Timedelta(hours=1)
@@ -389,58 +319,35 @@ def prepare_prediction_data(
 
         weather = target_weather.iloc[0]
 
-        # ----------------------------------------
         # SIMPAN DATA
-        # ----------------------------------------
-
         rows.append({
-
             "location_id": location_id,
-
             "target_time": target_time,
-
             "weather_time": weather_time,
-
             "LAG1": lag_values[0],
-
             "LAG2": lag_values[1],
-
             "LAG3": lag_values[2],
-
             "temperature_2m":
                 weather["temperature_2m"],
-
             "relative_humidity_2m":
                 weather["relative_humidity_2m"],
-
             "rain":
                 weather["rain"],
-
             "wind_speed_10m":
                 weather["wind_speed_10m"],
-
         })
 
     return pd.DataFrame(rows)
 
 
-# ============================================================
 # 8. PREDIKSI XGBOOST
-# ============================================================
-
 def main():
 
-    # ----------------------------------------
     # CEK MODEL
-    # ----------------------------------------
-
     if not MODEL_PATH.exists():
-
         raise FileNotFoundError(
-
             f"Model XGBoost tidak ditemukan: "
             f"{MODEL_PATH}"
-
         )
 
     print(
@@ -450,72 +357,45 @@ def main():
     model = joblib.load(
         MODEL_PATH
     )
-
     print(
         "Model XGBoost berhasil dimuat."
     )
 
-    # ----------------------------------------
     # AMBIL DATA NO2
-    # ----------------------------------------
-
     print(
         "\nMengambil data NO2..."
     )
-
     df_no2 = fetch_no2()
 
-    # ----------------------------------------
     # AMBIL DATA METEOROLOGI
-    # ----------------------------------------
-
     print(
         "Mengambil data meteorologi..."
     )
-
     df_weather = fetch_weather()
 
-    # ----------------------------------------
     # WAKTU TARGET
-    # ----------------------------------------
-
     target_time = get_target_time()
-
     print(
         f"\nTarget prediksi: "
         f"{target_time.strftime('%Y-%m-%d %H:%M:%S')}"
     )
 
-    # ----------------------------------------
     # SIAPKAN FITUR
-    # ----------------------------------------
-
     X = prepare_prediction_data(
-
         df_no2,
-
         df_weather,
-
         target_time
-
     )
 
-    # ----------------------------------------
     # PREDIKSI
-    # ----------------------------------------
-
     predictions = model.predict(
         X[FEATURES]
     )
-
     X[
         "predicted_nitrogen_dioxide"
     ] = predictions
 
-    # ----------------------------------------
     # FORMAT WAKTU
-    # ----------------------------------------
-
     X["target_time"] = X[
         "target_time"
     ].apply(
@@ -535,32 +415,22 @@ def main():
         x.strftime(
             "%Y-%m-%d %H:%M:%S"
         )
-
     )
 
-    # ----------------------------------------
     # SIMPAN CSV
-    # ----------------------------------------
-
     output_file = (
         OUTPUT_DIR
         / "xgboost_realtime_predictions.csv"
     )
 
     X.to_csv(
-
         output_file,
-
         index=False,
-
         lineterminator="\n"
 
     )
 
-    # ----------------------------------------
     # HASIL
-    # ----------------------------------------
-
     print(
         "\nPrediksi XGBoost selesai!"
     )
@@ -577,28 +447,19 @@ def main():
     )
 
 
-# ============================================================
 # 9. JALANKAN PROGRAM
-# ============================================================
-
 if __name__ == "__main__":
-
     try:
-
         main()
-
     except requests.RequestException as error:
-
         print(
             f"Gagal mengambil API: {error}"
         )
-
     except (
         ValueError,
         KeyError,
         IndexError
     ) as error:
-
         print(
             f"Terjadi kesalahan: {error}"
         )
