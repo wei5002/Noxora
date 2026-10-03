@@ -16,15 +16,28 @@ import { RiCloudWindyFill } from "react-icons/ri";
 export default function Home() {
   const router = useRouter();
 
+  // =========================================================
+  // STATE
+  // =========================================================
+
   const [predictionData, setPredictionData] = useState(null);
+
   const [selectedLocation, setSelectedLocation] = useState("1");
+
   const [selectedPredictionLocation, setSelectedPredictionLocation] =
     useState("");
 
   const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
+
   const [currentLocationData, setCurrentLocationData] = useState(null);
+
   const [allLocations, setAllLocations] = useState([]);
+
+  // =========================================================
+  // NAMA LOKASI
+  // =========================================================
 
   const locationNames = {
     1: "Jakarta Timur",
@@ -39,6 +52,10 @@ export default function Home() {
     10: "Purwakarta",
   };
 
+  // =========================================================
+  // AMBIL DATA NO2 PER LOKASI
+  // =========================================================
+
   const getLocationNO2 = (locationId) => {
     const item = allLocations.find(
       (row) => String(row.location_id) === String(locationId),
@@ -49,14 +66,26 @@ export default function Home() {
       : "-";
   };
 
+  // =========================================================
+  // HANDLE PREDICTION
+  // =========================================================
+
   const handleSendPrediction = async () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
+
+    // -------------------------------------------------------
+    // CEK LOGIN
+    // -------------------------------------------------------
 
     if (isLoggedIn !== "true") {
       alert("Silakan login terlebih dahulu untuk melakukan prediksi.");
       router.push("/Login");
       return;
     }
+
+    // -------------------------------------------------------
+    // CEK LOKASI
+    // -------------------------------------------------------
 
     if (!selectedPredictionLocation) {
       setError("Silakan pilih lokasi terlebih dahulu.");
@@ -67,25 +96,61 @@ export default function Home() {
       setLoading(true);
       setError("");
 
+      // -----------------------------------------------------
+      // REQUEST KE BACKEND
+      // -----------------------------------------------------
+
       const response = await fetch(
         `http://localhost:5000/api/realtime?location_id=${selectedPredictionLocation}&predict=true`,
       );
 
       const result = await response.json();
-      // console.log("HASIL PREDIKSI DARI BACKEND:", result);
+
+      console.log("HASIL PREDIKSI DARI BACKEND:", result);
 
       if (!response.ok) {
         throw new Error(result.message || "Gagal mengambil data prediksi.");
       }
 
-      const predictedNO2 = Number(result.predicted_nitrogen_dioxide);
+      // =====================================================
+      // AMBIL HASIL PREDIKSI SVR
+      // =====================================================
+
+      const predictedSVR = Number(result.predicted_nitrogen_dioxide);
+
+      // =====================================================
+      // AMBIL HASIL PREDIKSI XGBOOST
+      // =====================================================
+
+      const predictedXGBoost = Number(
+        result.predicted_nitrogen_dioxide_xgboost,
+      );
+
+      // =====================================================
+      // VALIDASI HASIL SVR
+      // =====================================================
 
       if (
         result.predicted_nitrogen_dioxide == null ||
-        Number.isNaN(predictedNO2)
+        Number.isNaN(predictedSVR)
       ) {
-        throw new Error("Data prediksi tidak tersedia.");
+        throw new Error("Data prediksi SVR tidak tersedia.");
       }
+
+      // =====================================================
+      // VALIDASI HASIL XGBOOST
+      // =====================================================
+
+      if (
+        result.predicted_nitrogen_dioxide_xgboost == null ||
+        Number.isNaN(predictedXGBoost)
+      ) {
+        throw new Error("Data prediksi XGBoost tidak tersedia.");
+      }
+
+      // =====================================================
+      // AMBIL TARGET TIME
+      // =====================================================
 
       const targetTimeValue = String(result.target_time || "");
 
@@ -97,36 +162,93 @@ export default function Home() {
         throw new Error("Waktu prediksi tidak tersedia.");
       }
 
-      // DATA GRAFIK
-      const chartSeries = [
+      // =====================================================
+      // DATA GRAFIK SVR
+      // =====================================================
+      //
+      // 3 titik pertama:
+      // LAG3 → LAG2 → LAG1
+      //
+      // Titik terakhir:
+      // hasil prediksi SVR
+      //
+      // =====================================================
+
+      const svrChartSeries = [
         Number(result.LAG3),
         Number(result.LAG2),
         Number(result.LAG1),
-        predictedNO2,
+        predictedSVR,
       ].map((value) => Number(value.toFixed(2)));
 
+      // =====================================================
+      // DATA GRAFIK XGBOOST
+      // =====================================================
+      //
+      // 3 titik pertama:
+      // LAG3 → LAG2 → LAG1
+      //
+      // Titik terakhir:
+      // hasil prediksi XGBoost
+      //
+      // =====================================================
+
+      const xgboostChartSeries = [
+        Number(result.LAG3),
+        Number(result.LAG2),
+        Number(result.LAG1),
+        predictedXGBoost,
+      ].map((value) => Number(value.toFixed(2)));
+
+      // =====================================================
       // WAKTU GRAFIK
+      // =====================================================
+
       const [hour, minute] = targetTime.split(":").map(Number);
+
       const targetMinutes = hour * 60 + minute;
+
       const chartCategories = [-180, -120, -60, 0].map((offset) => {
         const totalMinutes = (targetMinutes + offset + 1440) % 1440;
+
         const h = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+
         const m = String(totalMinutes % 60).padStart(2, "0");
+
         return `${h}:${m}`;
       });
 
-      // SIMPAN HASIL PREDIKSI
+      // =====================================================
+      // SIMPAN DATA PREDIKSI
+      // =====================================================
+
       setPredictionData({
         location_id: result.location_id,
+
         target_time: result.target_time,
-        value: predictedNO2,
+
+        // Nilai prediksi
+        svrValue: predictedSVR,
+
+        xgboostValue: predictedXGBoost,
+
+        // Waktu prediksi
         time: targetTime,
-        method: "SVR",
+
+        // Data cuaca
         temperature_2m: result.temperature_2m,
+
         wind_speed_10m: result.wind_speed_10m,
+
         rain: result.rain,
+
         relative_humidity_2m: result.relative_humidity_2m,
-        chartSeries,
+
+        // Data grafik
+        svrChartSeries,
+
+        xgboostChartSeries,
+
         chartCategories,
       });
     } catch (error) {
@@ -139,6 +261,10 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  // =========================================================
+  // SCROLL TARGET
+  // =========================================================
 
   useEffect(() => {
     const target = sessionStorage.getItem("scrollTarget");
@@ -154,7 +280,11 @@ export default function Home() {
     }
   }, []);
 
-  // Data realtime untuk lokasi yang dipilih di kartu "Current Weather"
+  // =========================================================
+  // DATA REALTIME LOKASI TERPILIH
+  // CURRENT WEATHER
+  // =========================================================
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -162,7 +292,9 @@ export default function Home() {
           `http://localhost:5000/api/realtime?location_id=${selectedLocation}`,
         );
 
-        if (!res.ok) throw new Error("Gagal mengambil data realtime.");
+        if (!res.ok) {
+          throw new Error("Gagal mengambil data realtime.");
+        }
 
         const data = await res.json();
 
@@ -171,21 +303,31 @@ export default function Home() {
         setCurrentLocationData(data);
       } catch (err) {
         console.error(err);
+
         setCurrentLocationData(null);
       }
     };
+
     load();
+
     const timer = setInterval(load, 5 * 60 * 1000);
+
     return () => clearInterval(timer);
   }, [selectedLocation]);
 
-  // Data realtime semua lokasi untuk kartu kecil
+  // =========================================================
+  // DATA REALTIME SEMUA LOKASI
+  // =========================================================
+
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch("http://localhost:5000/api/realtime-all");
+
         if (!res.ok) return;
+
         const data = await res.json();
+
         setAllLocations(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error(err);
@@ -193,9 +335,15 @@ export default function Home() {
     };
 
     load();
+
     const timer = setInterval(load, 5 * 60 * 1000);
+
     return () => clearInterval(timer);
   }, []);
+
+  // =========================================================
+  // RETURN
+  // =========================================================
 
   return (
     <Flex
@@ -212,6 +360,10 @@ export default function Home() {
         gap={{ base: "4vh", lg: "5vh" }}
         py={"4vh"}
       >
+        {/* =====================================================
+            CURRENT WEATHER + PREDICTION
+        ====================================================== */}
+
         <Flex
           direction={{
             base: "column",
@@ -231,7 +383,9 @@ export default function Home() {
           gap="3vh"
           align="stretch"
         >
-          {/* CURRENT WEATHER */}
+          {/* ===================================================
+              CURRENT WEATHER
+          ==================================================== */}
 
           <Flex
             w={{
@@ -244,7 +398,8 @@ export default function Home() {
             direction="column"
             gap="2vh"
           >
-            {/* Current Weather */}
+            {/* CURRENT WEATHER CARD */}
+
             <Flex
               w={"100%"}
               p={"2.5vh"}
@@ -263,6 +418,7 @@ export default function Home() {
 
                   <Flex w="30vh" direction="row" gap="1vh" align="center">
                     <FaLocationDot />
+
                     <ComboBoxDashboard
                       value={selectedLocation}
                       onValueChange={setSelectedLocation}
@@ -297,7 +453,10 @@ export default function Home() {
               </Text>
             </Flex>
 
-            {/* Mini Cards */}
+            {/* =================================================
+                MINI CARDS
+            ================================================== */}
+
             <Grid
               w="100%"
               templateColumns={{
@@ -322,6 +481,7 @@ export default function Home() {
                     : "-"
                 }
               />
+
               <MiniCard
                 title="Temperature"
                 hasil={
@@ -365,7 +525,10 @@ export default function Home() {
               />
             </Grid>
 
-            {/* Location Cards */}
+            {/* =================================================
+                LOCATION CARDS
+            ================================================== */}
+
             <Flex
               w="100%"
               gap="2vh"
@@ -397,7 +560,9 @@ export default function Home() {
             </Flex>
           </Flex>
 
-          {/* PREDICTION */}
+          {/* ===================================================
+              PREDICTION
+          ==================================================== */}
 
           <Flex
             w={{
@@ -411,11 +576,14 @@ export default function Home() {
             gap="2vh"
             minW="0"
           >
-            {/* Prediction Input */}
+            {/* =================================================
+                PREDICTION INPUT
+            ================================================== */}
+
             <Flex
               w="100%"
               p="2.5vh"
-              boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+              boxShadow={"0 4px 12px rgba(0, 0, 0, 0.2)"}
               borderRadius="2vh"
               bg="bg.secondary"
               gap="2vh"
@@ -530,7 +698,10 @@ export default function Home() {
               </Flex>
             </Flex>
 
-            {/* PREDICTION GRAPH + RESULT */}
+            {/* =================================================
+                GRAPH + RESULT
+            ================================================== */}
+
             <Flex
               w="100%"
               direction={{
@@ -542,7 +713,10 @@ export default function Home() {
               align="stretch"
               minW="0"
             >
-              {/* GRAPH */}
+              {/* =================================================
+                  GRAPH
+              ================================================== */}
+
               <Flex
                 flex="1"
                 minW="0"
@@ -556,7 +730,10 @@ export default function Home() {
                 <PredictionChart data={predictionData} />
               </Flex>
 
-              {/* RESULT */}
+              {/* =================================================
+                  RESULT
+              ================================================== */}
+
               <Flex
                 w={{
                   base: "100%",
@@ -569,7 +746,7 @@ export default function Home() {
                 }}
                 direction="column"
                 p="2.5vh"
-                boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                boxShadow={"0 4px 12px rgba(0, 0, 0, 0.2)"}
                 borderRadius="2vh"
                 bg="bg.secondary"
                 gap="2vh"
@@ -603,9 +780,11 @@ export default function Home() {
                   </Flex>
 
                   <Flex w="100%" direction="column" gap="2vh" mt="1.5vh">
-                    {/* SVR */}
+                    {/* =================================================
+                        SVR
+                    ================================================== */}
+
                     <Flex
-                      // h={"full"}
                       w="100%"
                       bg="card.primary"
                       py="2vh"
@@ -642,7 +821,7 @@ export default function Home() {
                             color="text.fouth"
                           >
                             {predictionData
-                              ? Number(predictionData.value).toFixed(2)
+                              ? Number(predictionData.svrValue).toFixed(2)
                               : "-"}
                           </Text>
 
@@ -655,9 +834,11 @@ export default function Home() {
                       </Flex>
                     </Flex>
 
-                    {/* XGBoost */}
+                    {/* =================================================
+                        XGBOOST
+                    ================================================== */}
+
                     <Flex
-                      // h={"full"}
                       w="100%"
                       bg="card.primary"
                       py="2vh"
@@ -694,7 +875,7 @@ export default function Home() {
                             color="text.fouth"
                           >
                             {predictionData
-                              ? Number(predictionData.value).toFixed(2)
+                              ? Number(predictionData.xgboostValue).toFixed(2)
                               : "-"}
                           </Text>
 
@@ -713,7 +894,10 @@ export default function Home() {
           </Flex>
         </Flex>
 
-        {/* ABOUT NOXORA */}
+        {/* =====================================================
+            ABOUT NOXORA
+        ====================================================== */}
+
         <Flex
           w={{
             base: "90%",
@@ -731,7 +915,7 @@ export default function Home() {
             md: "row",
           }}
           borderRadius="2vh"
-          boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+          boxShadow={"0 4px 12px rgba(0, 0, 0, 0.2)"}
         >
           <Flex
             w={{
@@ -784,7 +968,9 @@ export default function Home() {
         </Flex>
       </Flex>
 
-      {/* FOOTER */}
+      {/* =======================================================
+          FOOTER
+      ======================================================== */}
 
       <Flex
         w="100%"
