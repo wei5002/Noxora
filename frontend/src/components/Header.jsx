@@ -15,6 +15,8 @@ export default function Header() {
   const [now, setNow] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallButton, setShowInstallButton] = useState(true);
 
   // CEK STATUS LOGIN
   useEffect(() => {
@@ -60,6 +62,28 @@ export default function Header() {
     };
   }, []);
 
+  // PWA INSTALL
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (event) => {
+      event.preventDefault();
+
+      setDeferredPrompt(event);
+      setShowInstallButton(true);
+    };
+
+    window.addEventListener(
+      "beforeinstallprompt",
+      handleBeforeInstallPrompt,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+    };
+  }, []);
+
   // FORMAT DATE
   const formattedDateTime = now
     ? now.toLocaleDateString("en-US", {
@@ -97,15 +121,32 @@ export default function Header() {
   // LOGOUT
   const handleLogout = () => {
     setShowLogoutPopup(true);
-};
+  };
 
-const confirmLogout = () => {
-  localStorage.removeItem("isLoggedIn");
+  const confirmLogout = () => {
+    localStorage.removeItem("isLoggedIn");
 
-  setIsLoggedIn(false);
-  setShowLogoutPopup(false);
+    setIsLoggedIn(false);
+    setShowLogoutPopup(false);
 
-  router.push("/");
+    router.push("/");
+  };
+
+  // INSTALL PWA
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) {
+      return;
+    }
+
+    deferredPrompt.prompt();
+
+    const { outcome } = await deferredPrompt.userChoice;
+
+    if (outcome === "accepted") {
+      setShowInstallButton(false);
+    }
+
+    setDeferredPrompt(null);
   };
 
   return (
@@ -143,9 +184,6 @@ const confirmLogout = () => {
           lg: "2.5vh",
         }}
       >
-        {/* =========================
-            LOGO + DATE + COLOR MODE
-        ========================= */}
         <Flex
           flex="1"
           minW={{
@@ -216,6 +254,29 @@ const confirmLogout = () => {
           }}
           flexShrink={0}
         >
+    {showInstallButton && (
+      <Button
+        w={{
+          base: "15vh",
+          sm: "16vh",
+        }}
+        h={{
+          base: "4vh",
+          sm: "4.5vh",
+        }}
+        _hover={{
+          bg: "hover.primary",
+        }}
+        fontSize="sm"
+        fontWeight="bold"
+        bg="button.six"
+        borderRadius="10vh"
+        onClick={handleInstallApp}
+      >
+        Add to App
+      </Button>
+    )}
+
           {/* LOGIN / PROFILE */}
           {isLoggedIn ? (
             <>
@@ -310,15 +371,15 @@ const confirmLogout = () => {
       </Flex>
 
       {showLogoutPopup && (
-       <PopupMini
-        title="Logout"
-        message="Apakah Anda yakin ingin logout?"
-        button1="Batal"
-        button2="Logout"
-        onClick1={() => setShowLogoutPopup(false)}
-        onClick2={confirmLogout}
-      />
-    )}
+        <PopupMini
+          title="Logout"
+          message="Apakah Anda yakin ingin logout?"
+          button1="Batal"
+          button2="Logout"
+          onClick1={() => setShowLogoutPopup(false)}
+          onClick2={confirmLogout}
+        />
+      )}
     </Flex>
   );
 }

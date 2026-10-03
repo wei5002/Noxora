@@ -153,6 +153,9 @@ const config = defineConfig({
         "button.fifth": {
           value: { base: "#30b6d0", _dark: "#0d0d0d" },
         },
+        "button.six": {
+          value: { base: "#f2d412", _dark: "#f2c912" },
+        },
 
         //hover
         "hover.primary": {

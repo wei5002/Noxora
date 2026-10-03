@@ -7,6 +7,7 @@ import Header from "../components/Header";
 export const metadata = {
   title: "Noxora",
   description: "Noxora Page",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }) {
