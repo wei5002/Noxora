@@ -49,7 +49,7 @@ export const DetailCard = ({ icon, title, keterangan, hasil, satuan }) => {
   );
 };
 
-export const DetailCard2 = ({ icon, title, keterangan, hasil, satuan }) => {
+export const DetailCard2 = ({  title, keterangan, hasil, satuan }) => {
   return (
     <Flex
       w={"100%"}
@@ -110,8 +110,9 @@ export const MiniCardLocation = ({
   location,
   hasil,
   lag2,
+  onSelect,
 }) => {
-   const currentValue = Number(hasil);
+  const currentValue = Number(hasil);
   const lastHourValue = Number(lag2);
 
   const isIncreasing =
@@ -123,6 +124,7 @@ export const MiniCardLocation = ({
     !isNaN(currentValue) &&
     !isNaN(lastHourValue) &&
     currentValue < lastHourValue;
+
   return (
     <Flex
       w={"50%"}
@@ -169,24 +171,29 @@ export const MiniCardLocation = ({
               Last Hour
             </Stat.HelpText>
 
-           <Badge
-            bg="transparent"
-            color={
-              isIncreasing
-                ? "red.500"
-                : isDecreasing
-                ? "green.500"
-                : "gray.500"
-            }
-            gap="0"
-          >
-            {isIncreasing && <Stat.UpIndicator color="red.500" />}
-            {isDecreasing && <Stat.DownIndicator color="green.500"/>}
+            <Badge
+              bg="transparent"
+              color={
+                isIncreasing
+                  ? "red.500"
+                  : isDecreasing
+                  ? "green.500"
+                  : "gray.500"
+              }
+              gap="0"
+            >
+              {isIncreasing && (
+                <Stat.UpIndicator color="red.500" />
+              )}
 
-            {lag2 !== "-" && lag2 != null
-              ? Number(lag2).toFixed(2)
-              : "-"}
-          </Badge>
+              {isDecreasing && (
+                <Stat.DownIndicator color="green.500" />
+              )}
+
+              {lag2 !== "-" && lag2 != null
+                ? Number(lag2).toFixed(2)
+                : "-"}
+            </Badge>
           </Flex>
         </Stat.Root>
       </Flex>
@@ -196,6 +203,8 @@ export const MiniCardLocation = ({
         pt={"0.75vh"}
         direction={"row"}
         justify={"space-between"}
+        cursor={"pointer"}
+        onClick={onSelect}
       >
         <Text
           fontSize={"xs"}

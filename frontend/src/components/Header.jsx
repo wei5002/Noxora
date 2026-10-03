@@ -82,17 +82,17 @@ export default function Header() {
   };
 
   // UPLOAD / PREDICTION
-  const handleUploadClick = () => {
-    if (pathname === "/") {
-      document.getElementById("uploadImage")?.scrollIntoView({
-        behavior: "smooth",
-      });
-    } else {
-      sessionStorage.setItem("scrollTarget", "uploadImage");
+  // const handleUploadClick = () => {
+  //   if (pathname === "/") {
+  //     document.getElementById("uploadImage")?.scrollIntoView({
+  //       behavior: "smooth",
+  //     });
+  //   } else {
+  //     sessionStorage.setItem("scrollTarget", "uploadImage");
 
-      router.push("/");
-    }
-  };
+  //     router.push("/");
+  //   }
+  // };
 
   // LOGOUT
   const handleLogout = () => {

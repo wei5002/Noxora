@@ -60,6 +60,10 @@ export default function Home() {
     return item?.LAG2 != null ? Number(item.LAG2).toFixed(2) : "-";
   };
 
+  const handleSelectLocation = (locationId) => {
+    setSelectedLocation(String(locationId));
+  };
+
   // HANDLE PREDICTION
   const handleSendPrediction = async () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -423,12 +427,14 @@ export default function Home() {
                   location="Jakarta Timur"
                   hasil={getLocationNO2(1)}
                   lag2={getLocationLAG2(1)}
+                  onSelect={() => handleSelectLocation(1)}
                 />
 
                 <MiniCardLocation
                   location="Bogor"
                   hasil={getLocationNO2(4)}
                   lag2={getLocationLAG2(4)}
+                  onSelect={() => handleSelectLocation(4)}
                 />
               </Flex>
 
@@ -437,12 +443,14 @@ export default function Home() {
                   location="Tangerang"
                   hasil={getLocationNO2(6)}
                   lag2={getLocationLAG2(6)}
+                  onSelect={() => handleSelectLocation(6)}
                 />
 
                 <MiniCardLocation
                   location="Bekasi"
                   hasil={getLocationNO2(3)}
                   lag2={getLocationLAG2(3)}
+                  onSelect={() => handleSelectLocation(3)}
                 />
               </Flex>
             </Flex>

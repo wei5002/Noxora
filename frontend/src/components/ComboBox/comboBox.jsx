@@ -32,18 +32,27 @@ export const ComboBoxDashboard = ({
     filter: contains,
   });
 
+  const selectedItem = LOCATION_OPTIONS.find(
+    (item) => item.value === String(value),
+  );
+
   return (
     <Combobox.Root
       collection={collection}
       value={value ? [String(value)] : []}
       onValueChange={(details) => {
-        onValueChange?.(details.value[0] ?? "");
+        const selectedValue = details.value[0] ?? "";
+
+        onValueChange?.(selectedValue);
       }}
-      onInputValueChange={(details) => filter(details.inputValue)}
+      onInputValueChange={(details) => {
+        filter(details.inputValue);
+      }}
       minH="1vh"
     >
       <Combobox.Control minH="2vh">
         <Combobox.Input
+          value={selectedItem?.label ?? ""}
           bg="whiteAlpha.900"
           color="blackAlpha.800"
           _placeholder={{ color: "#7d7b7b" }}
