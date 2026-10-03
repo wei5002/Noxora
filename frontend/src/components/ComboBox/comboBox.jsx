@@ -6,6 +6,7 @@ import {
   useFilter,
   useListCollection,
 } from "@chakra-ui/react";
+import { useState } from "react";
 
 export const LOCATION_OPTIONS = [
   { label: "Jakarta Timur", value: "1" },
@@ -36,23 +37,40 @@ export const ComboBoxDashboard = ({
     (item) => item.value === String(value),
   );
 
+  const [inputValue, setInputValue] = useState(
+    selectedItem?.label ?? "",
+  );
+
+  const handleInputChange = (details) => {
+    setInputValue(details.inputValue);
+    filter(details.inputValue);
+  };
+
+  const handleValueChange = (details) => {
+    const selectedValue = details.value[0] ?? "";
+
+    onValueChange?.(selectedValue);
+
+    const selected = LOCATION_OPTIONS.find(
+      (item) => item.value === selectedValue,
+    );
+
+    if (selected) {
+      setInputValue(selected.label);
+    }
+  };
+
   return (
     <Combobox.Root
       collection={collection}
       value={value ? [String(value)] : []}
-      onValueChange={(details) => {
-        const selectedValue = details.value[0] ?? "";
-
-        onValueChange?.(selectedValue);
-      }}
-      onInputValueChange={(details) => {
-        filter(details.inputValue);
-      }}
+      inputValue={inputValue}
+      onValueChange={handleValueChange}
+      onInputValueChange={handleInputChange}
       minH="1vh"
     >
       <Combobox.Control minH="2vh">
         <Combobox.Input
-          value={selectedItem?.label ?? ""}
           bg="whiteAlpha.900"
           color="blackAlpha.800"
           _placeholder={{ color: "#7d7b7b" }}
@@ -69,7 +87,9 @@ export const ComboBoxDashboard = ({
       <Portal>
         <Combobox.Positioner color="black">
           <Combobox.Content bg="#f0eded">
-            <Combobox.Empty>No items found</Combobox.Empty>
+            <Combobox.Empty>
+              No items found
+            </Combobox.Empty>
 
             {collection.items.map((item) => (
               <Combobox.Item
@@ -81,6 +101,7 @@ export const ComboBoxDashboard = ({
                 }}
               >
                 {item.label}
+
                 <Combobox.ItemIndicator />
               </Combobox.Item>
             ))}
