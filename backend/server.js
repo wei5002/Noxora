@@ -164,9 +164,27 @@ app.get("/api/realtime-all", async (req, res) => {
       });
     }
 
-    const data = readCSV(REALTIME_CSV);
+    if (!fs.existsSync(SVR_PREDICTION_CSV)) {
+      return res.status(404).json({
+        message: "Data prediksi SVR belum tersedia.",
+      });
+    }
 
-    return res.json(data);
+    const data = readCSV(REALTIME_CSV);
+    const svrData = readCSV(SVR_PREDICTION_CSV);
+
+    const result = data.map((item) => {
+      const prediction = svrData.find(
+        (svr) => Number(svr.location_id) === Number(item.location_id),
+      );
+
+      return {
+        ...item,
+        LAG2: prediction?.LAG2 ?? null,
+      };
+    });
+
+    return res.json(result);
   } catch (error) {
     console.error("Gagal membaca data realtime:", error);
 

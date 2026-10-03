@@ -6,6 +6,7 @@ import { ColorModeButton } from "@/components/ui/color-mode";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { RiCloudWindyFill } from "react-icons/ri";
+import { PopupMini } from "./Popup/popup";
 
 export default function Header() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function Header() {
 
   const [now, setNow] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
 
   // CEK STATUS LOGIN
   useEffect(() => {
@@ -94,19 +96,16 @@ export default function Header() {
 
   // LOGOUT
   const handleLogout = () => {
-    const confirmed = window.confirm(
-      "Apakah Anda yakin ingin logout?",
-    );
+    setShowLogoutPopup(true);
+};
 
-    if (!confirmed) {
-      return;
-    }
+const confirmLogout = () => {
+  localStorage.removeItem("isLoggedIn");
 
-    localStorage.removeItem("isLoggedIn");
+  setIsLoggedIn(false);
+  setShowLogoutPopup(false);
 
-    setIsLoggedIn(false);
-
-    router.push("/");
+  router.push("/");
   };
 
   return (
@@ -309,6 +308,17 @@ export default function Header() {
           )}
         </Flex>
       </Flex>
+
+      {showLogoutPopup && (
+       <PopupMini
+        title="Logout"
+        message="Apakah Anda yakin ingin logout?"
+        button1="Batal"
+        button2="Logout"
+        onClick1={() => setShowLogoutPopup(false)}
+        onClick2={confirmLogout}
+      />
+    )}
     </Flex>
   );
 }

@@ -61,28 +61,37 @@ def fetch_no2():
     params = {
         "latitude": ",".join(map(str, LATITUDES)),
         "longitude": ",".join(map(str, LONGITUDES)),
-        "current": "nitrogen_dioxide",
+        "hourly": "nitrogen_dioxide",
+        "past_days": 1,
+        "forecast_days": 1,
         "timezone": "Asia/Jakarta",
     }
 
     data = fetch_api(AIR_QUALITY_URL, params)
 
-    # Jika banyak koordinat, respons dapat berupa list.
     if isinstance(data, dict):
         data = [data]
 
     rows = []
 
     for i, item in enumerate(data):
-        current = item.get("current", {})
+        hourly = item.get("hourly", {})
 
-        rows.append({
-            "location_id": i + 1,
-            "time_no2": current.get("time"),
-            "nitrogen_dioxide": current.get(
-                "nitrogen_dioxide"
-            ),
-        })
+        times = hourly.get("time", [])
+        nitrogen_dioxide = hourly.get(
+            "nitrogen_dioxide",
+            []
+        )
+
+        for time, value in zip(
+            times,
+            nitrogen_dioxide
+        ):
+            rows.append({
+                "location_id": i + 1,
+                "time": pd.to_datetime(time),
+                "nitrogen_dioxide": value,
+            })
 
     return pd.DataFrame(rows)
 
@@ -139,23 +148,127 @@ def main():
 
     df_weather = fetch_weather()
 
-    # Gabungkan berdasarkan ID lokasi.
-    df = pd.merge(
-        df_no2,
-        df_weather,
-        on="location_id",
-        how="inner"
+    df_no2["time"] = pd.to_datetime(
+        df_no2["time"]
     )
+
+    df_weather["time_weather"] = pd.to_datetime(
+        df_weather["time_weather"]
+    )
+
+    realtime_time = df_no2["time"].max()
+
+    rows = []
+
+    for location_id in range(
+        1,
+        len(LATITUDES) + 1
+    ):
+        location_data = df_no2[
+            df_no2["location_id"] == location_id
+        ].sort_values("time")
+
+        current_data = location_data[
+            location_data["time"] == realtime_time
+        ]
+
+        if current_data.empty:
+            continue
+
+        current_no2 = current_data.iloc[0][
+            "nitrogen_dioxide"
+        ]
+
+        lag1_time = (
+            realtime_time
+            - pd.Timedelta(hours=1)
+        )
+
+        lag2_time = (
+            realtime_time
+            - pd.Timedelta(hours=2)
+        )
+
+        lag3_time = (
+            realtime_time
+            - pd.Timedelta(hours=3)
+        )
+
+        lag1_data = location_data[
+            location_data["time"] == lag1_time
+        ]
+
+        lag2_data = location_data[
+            location_data["time"] == lag2_time
+        ]
+
+        lag3_data = location_data[
+            location_data["time"] == lag3_time
+        ]
+
+        lag1 = (
+            lag1_data.iloc[0]["nitrogen_dioxide"]
+            if not lag1_data.empty
+            else None
+        )
+
+        lag2 = (
+            lag2_data.iloc[0]["nitrogen_dioxide"]
+            if not lag2_data.empty
+            else None
+        )
+
+        lag3 = (
+            lag3_data.iloc[0]["nitrogen_dioxide"]
+            if not lag3_data.empty
+            else None
+        )
+
+        weather_data = df_weather[
+            df_weather["location_id"]
+            == location_id
+        ]
+
+        if weather_data.empty:
+            continue
+
+        weather = weather_data.iloc[0]
+
+        rows.append({
+            "location_id": location_id,
+            "time_no2": current_data.iloc[0]["time"],
+            "nitrogen_dioxide": current_no2,
+            "time_weather": weather["time_weather"],
+            "temperature_2m":
+                weather["temperature_2m"],
+            "relative_humidity_2m":
+                weather["relative_humidity_2m"],
+            "rain":
+                weather["rain"],
+            "wind_speed_10m":
+                weather["wind_speed_10m"],
+            "LAG1": lag1,
+            "LAG2": lag2,
+            "LAG3": lag3,
+        })
+
+    df = pd.DataFrame(rows)
 
     # Simpan CSV secara otomatis.
     ml_dir = Path(__file__).resolve().parents[1]
 
     output_dir = ml_dir / "data" / "api"
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
     output_file = output_dir / "realtime_api.csv"
 
-    df.to_csv(output_file, index=False)
+    df.to_csv(
+        output_file,
+        index=False
+    )
 
     print("\nPengambilan data selesai!")
     print(f"Jumlah lokasi: {len(df)}")
@@ -169,6 +282,14 @@ if __name__ == "__main__":
     try:
         main()
     except requests.RequestException as error:
-        print(f"Gagal mengambil data dari API: {error}")
-    except (KeyError, TypeError, ValueError) as error:
-        print(f"Terjadi kesalahan saat memproses data: {error}")
+        print(
+            f"Gagal mengambil data dari API: {error}"
+        )
+    except (
+        KeyError,
+        TypeError,
+        ValueError
+    ) as error:
+        print(
+            f"Terjadi kesalahan saat memproses data: {error}"
+        )

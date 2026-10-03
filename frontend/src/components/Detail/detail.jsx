@@ -88,7 +88,7 @@ export const DetailCard2 = ({ icon, title, keterangan, hasil, satuan }) => {
   );
 };
 
-export const MiniCard = ({ icon, title, keterangan, hasil, satuan }) => {
+export const MiniCard = ({  title, hasil }) => {
   return (
     <Flex
       w={"100%"}
@@ -106,7 +106,23 @@ export const MiniCard = ({ icon, title, keterangan, hasil, satuan }) => {
   );
 };
 
-export const MiniCardLocation = ({ location, hasil }) => {
+export const MiniCardLocation = ({
+  location,
+  hasil,
+  lag2,
+}) => {
+   const currentValue = Number(hasil);
+  const lastHourValue = Number(lag2);
+
+  const isIncreasing =
+    !isNaN(currentValue) &&
+    !isNaN(lastHourValue) &&
+    currentValue > lastHourValue;
+
+  const isDecreasing =
+    !isNaN(currentValue) &&
+    !isNaN(lastHourValue) &&
+    currentValue < lastHourValue;
   return (
     <Flex
       w={"50%"}
@@ -116,47 +132,82 @@ export const MiniCardLocation = ({ location, hasil }) => {
       direction={"column"}
       bg={"bg.secondary"}
       gap={"0.5vh"}
-      boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)">
-      <Flex direction={"row"} align={"center"} gap={"0.5vh"} mb={"0.5vh"}>
+      boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+    >
+      <Flex
+        direction={"row"}
+        align={"center"}
+        gap={"0.5vh"}
+        mb={"0.5vh"}
+      >
         <FaLocationDot size={"1.75vh"} />
-        <Text fontSize={"1.85vh"}>{location}</Text>
-      </Flex>
-      {/* <Flex direction={"row"} justify={"center"} align={"center"} gap={"1vh"}>
-        <Text fontWeight={"bold"} fontSize={"2xl"}>
-          {hasil}
+
+        <Text fontSize={"1.85vh"}>
+          {location}
         </Text>
-    
-      </Flex> */}
-      <Flex justify={"center"} align={"center"}>
-        <Stat.Root gap={"1vh"} >
+      </Flex>
+
+      <Flex
+        justify={"center"}
+        align={"center"}
+      >
+        <Stat.Root gap={"1vh"}>
           <HStack justify="center">
             <Stat.ValueText>
-              {hasil} <Text fontSize={"sm"}>μg/m³</Text>
+              {hasil}{" "}
+              <Text fontSize={"sm"}>
+                μg/m³
+              </Text>
             </Stat.ValueText>
           </HStack>
-          <Flex justify={"space-between"} align={"center"}>
-            <Stat.HelpText>Last Day</Stat.HelpText>
-            <Badge bg="transparent" color="inherit" gap="0">
-              <Stat.UpIndicator />
-              12
-            </Badge>
+
+          <Flex
+            justify={"space-between"}
+            align={"center"}
+          >
+            <Stat.HelpText>
+              Last Hour
+            </Stat.HelpText>
+
+           <Badge
+            bg="transparent"
+            color={
+              isIncreasing
+                ? "red.500"
+                : isDecreasing
+                ? "green.500"
+                : "gray.500"
+            }
+            gap="0"
+          >
+            {isIncreasing && <Stat.UpIndicator color="red.500" />}
+            {isDecreasing && <Stat.DownIndicator color="green.500"/>}
+
+            {lag2 !== "-" && lag2 != null
+              ? Number(lag2).toFixed(2)
+              : "-"}
+          </Badge>
           </Flex>
         </Stat.Root>
       </Flex>
-      {/* <Text>
-        <Text fontSize={"sm"} color={"text.thrid"} textAlign={"end"}>
-          naik 5.0
-        </Text>
-      </Text> */}
+
       <Flex
         borderTop={"1px solid #eae9e9"}
         pt={"0.75vh"}
         direction={"row"}
-        justify={"space-between"}>
-        <Text fontSize={"xs"} color={"text.thrid"}>
+        justify={"space-between"}
+      >
+        <Text
+          fontSize={"xs"}
+          color={"text.thrid"}
+        >
           See More
         </Text>
-        <Text fontSize={"xs"} color={"text.thrid"}>
+
+        <Text
+          fontSize={"xs"}
+          color={"text.thrid"}
+        >
           {">"}
         </Text>
       </Flex>

@@ -3,11 +3,13 @@
 import { Avatar, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PopupMini } from "../../components/Popup/popup";
 
 export default function Profile() {
   const router = useRouter();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -53,18 +55,15 @@ export default function Profile() {
   }, [router]);
 
   // DELETE ACCOUNT
-  const handleDeleteAccount = async () => {
-    const confirmDelete = window.confirm(
-      "Apakah anda yakin ingin menghapus akun?",
-    );
+  const handleDeleteAccount = () => {
+    setShowDeletePopup(true);
+  };
 
-    if (!confirmDelete) {
-      return;
-    }
-
+  const confirmDeleteAccount = async () => {
     const storedUser = localStorage.getItem("user");
 
     if (!storedUser) {
+      setShowDeletePopup(false);
       alert("Data akun tidak ditemukan.");
       return;
     }
@@ -82,6 +81,7 @@ export default function Profile() {
       const data = await response.json();
 
       if (!response.ok) {
+        setShowDeletePopup(false);
         alert(data.message || "Gagal menghapus akun.");
         return;
       }
@@ -93,11 +93,16 @@ export default function Profile() {
       // Beritahu component lain bahwa user sudah logout
       window.dispatchEvent(new Event("login"));
 
+      setShowDeletePopup(false);
+
       alert("Akun berhasil dihapus.");
 
       router.push("/Login");
     } catch (error) {
       console.error("Error:", error);
+
+      setShowDeletePopup(false);
+
       alert("Tidak dapat terhubung ke server.");
     }
   };
@@ -294,6 +299,7 @@ export default function Profile() {
           <Text w="30vh">Username</Text>
 
           <Input
+            color={"black "}
             bg={isEditing ? "white" : "gray.100"}
             h="4vh"
             value={username}
@@ -312,6 +318,7 @@ export default function Profile() {
 
           <Input
             bg={isEditing ? "white" : "gray.100"}
+            color={"black "}
             h="4vh"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -328,6 +335,7 @@ export default function Profile() {
           <Text w="30vh">Telp</Text>
 
           <Input
+            color={"black "}
             bg={isEditing ? "white" : "gray.100"}
             h="4vh"
             value={isEditing ? telp : telp || "-"}
@@ -382,6 +390,16 @@ export default function Profile() {
           </Button>
         </Flex>
       </Flex>
+      {showDeletePopup && (
+        <PopupMini
+          title="Delete Account"
+          message="Apakah Anda yakin ingin menghapus akun?"
+          onClick1={() => setShowDeletePopup(false)}
+          onClick2={confirmDeleteAccount}
+          button1="Cancel"
+          button2="Delete"
+        />
+      )}
     </Flex>
   );
 }

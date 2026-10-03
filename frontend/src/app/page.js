@@ -51,6 +51,15 @@ export default function Home() {
       : "-";
   };
 
+  // AMBIL LAG2 PER LOKASI
+  const getLocationLAG2 = (locationId) => {
+    const item = allLocations.find(
+      (row) => String(row.location_id) === String(locationId),
+    );
+
+    return item?.LAG2 != null ? Number(item.LAG2).toFixed(2) : "-";
+  };
+
   // HANDLE PREDICTION
   const handleSendPrediction = async () => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
@@ -413,18 +422,28 @@ export default function Home() {
                 <MiniCardLocation
                   location="Jakarta Timur"
                   hasil={getLocationNO2(1)}
+                  lag2={getLocationLAG2(1)}
                 />
 
-                <MiniCardLocation location="Bogor" hasil={getLocationNO2(4)} />
+                <MiniCardLocation
+                  location="Bogor"
+                  hasil={getLocationNO2(4)}
+                  lag2={getLocationLAG2(4)}
+                />
               </Flex>
 
               <Flex w="100%" direction="row" gap="2vh">
                 <MiniCardLocation
                   location="Tangerang"
                   hasil={getLocationNO2(6)}
+                  lag2={getLocationLAG2(6)}
                 />
 
-                <MiniCardLocation location="Bekasi" hasil={getLocationNO2(3)} />
+                <MiniCardLocation
+                  location="Bekasi"
+                  hasil={getLocationNO2(3)}
+                  lag2={getLocationLAG2(3)}
+                />
               </Flex>
             </Flex>
           </Flex>
