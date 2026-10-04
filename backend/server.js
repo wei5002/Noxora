@@ -119,8 +119,57 @@ async function runMLPipeline() {
     await runPythonScript("fetch_realtime_api.py");
     await runPythonScript("predict_realtime_svr.py");
     await runPythonScript("predict_realtime_xgboost.py");
+
+    return true;
   } catch (error) {
     console.error(error.message);
+
+    return false;
+  }
+}
+
+let lastMLRunHour = null;
+let isMLRunning = false;
+
+function getCurrentHourKey() {
+  const now = new Date();
+
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+  })
+    .format(now)
+    .replace(" ", "T");
+}
+
+async function ensureMLPipeline() {
+  const currentHour = getCurrentHourKey();
+
+  if (lastMLRunHour === currentHour) {
+    return;
+  }
+
+  if (isMLRunning) {
+    while (isMLRunning) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+
+    return;
+  }
+
+  isMLRunning = true;
+
+  try {
+    const success = await runMLPipeline();
+
+    if (success) {
+      lastMLRunHour = currentHour;
+    }
+  } finally {
+    isMLRunning = false;
   }
 }
 
@@ -158,6 +207,8 @@ function readCSV(filePath) {
 // REALTIME ALL
 app.get("/api/realtime-all", async (req, res) => {
   try {
+    await ensureMLPipeline();
+
     if (!fs.existsSync(REALTIME_CSV)) {
       return res.status(404).json({
         message: "Data realtime belum tersedia.",
@@ -207,6 +258,8 @@ app.get("/api/realtime", async (req, res) => {
         message: "location_id wajib diisi.",
       });
     }
+
+    await ensureMLPipeline();
 
     // JIKA MEMINTA DATA PREDIKSI
     if (predict) {
@@ -317,6 +370,8 @@ app.get("/api/realtime", async (req, res) => {
 // PREDICTIONS
 app.get("/api/predictions", async (req, res) => {
   try {
+    await ensureMLPipeline();
+
     // CEK SVR
     if (!fs.existsSync(SVR_PREDICTION_CSV)) {
       return res.status(404).json({
@@ -386,5 +441,10 @@ app.listen(PORT, async () => {
   console.log(`Backend berjalan di http://localhost:${PORT}`);
   // console.log("========================================");
 
-  await runMLPipeline();
+  const currentHour = getCurrentHourKey();
+  const success = await runMLPipeline();
+
+  if (success) {
+    lastMLRunHour = currentHour;
+  }
 });
