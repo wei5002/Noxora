@@ -3,6 +3,8 @@ import pandas as pd
 
 from pathlib import Path
 from datetime import datetime
+from zoneinfo import ZoneInfo
+from datetime import datetime
 
 
 # 1. KONFIGURASI LOKASI
@@ -156,7 +158,18 @@ def main():
         df_weather["time_weather"]
     )
 
-    realtime_time = df_no2["time"].max()
+    now = datetime.now(
+        ZoneInfo("Asia/Jakarta")
+    )
+
+    realtime_time = pd.Timestamp(
+        now.replace(
+            minute=0,
+            second=0,
+            microsecond=0,
+            tzinfo=None
+        )
+    )   
 
     rows = []
 

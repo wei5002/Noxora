@@ -6,7 +6,6 @@ import {
   useFilter,
   useListCollection,
 } from "@chakra-ui/react";
-import { useState } from "react";
 
 export const LOCATION_OPTIONS = [
   { label: "Jakarta Timur", value: "1" },
@@ -26,45 +25,35 @@ export const ComboBoxDashboard = ({
   onValueChange,
   placeholder = "Search Location...",
 }) => {
-  const { contains } = useFilter({ sensitivity: "base" });
+  const { contains } = useFilter({
+    sensitivity: "base",
+  });
 
-  const { collection, filter } = useListCollection({
+  const { collection, filter, reset } = useListCollection({
     initialItems: LOCATION_OPTIONS,
     filter: contains,
   });
 
-  const selectedItem = LOCATION_OPTIONS.find(
-    (item) => item.value === String(value),
-  );
-
-  const [inputValue, setInputValue] = useState(
-    selectedItem?.label ?? "",
-  );
-
   const handleInputChange = (details) => {
-    setInputValue(details.inputValue);
     filter(details.inputValue);
   };
 
   const handleValueChange = (details) => {
     const selectedValue = details.value[0] ?? "";
 
+    reset();
     onValueChange?.(selectedValue);
-
-    const selected = LOCATION_OPTIONS.find(
-      (item) => item.value === selectedValue,
-    );
-
-    if (selected) {
-      setInputValue(selected.label);
-    }
   };
+
+  const selectedItem = LOCATION_OPTIONS.find(
+    (item) => item.value === String(value),
+  );
 
   return (
     <Combobox.Root
       collection={collection}
       value={value ? [String(value)] : []}
-      inputValue={inputValue}
+      selectionBehavior="replace"
       onValueChange={handleValueChange}
       onInputValueChange={handleInputChange}
       minH="1vh"
@@ -73,9 +62,12 @@ export const ComboBoxDashboard = ({
         <Combobox.Input
           bg="whiteAlpha.900"
           color="blackAlpha.800"
-          _placeholder={{ color: "#7d7b7b" }}
+           _placeholder={{
+            color: "blackAlpha.800",
+            opacity: 1,
+          }}
           minH="4vh"
-          placeholder={placeholder}
+          placeholder={selectedItem?.label ?? placeholder}
         />
 
         <Combobox.IndicatorGroup minH="2vh" color="grey">

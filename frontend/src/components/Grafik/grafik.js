@@ -76,6 +76,18 @@ export default function PredictionChart({ data }) {
 
     markers: {
       size: 4,
+      discrete: [
+        {
+          seriesIndex: 0,
+          dataPointIndex: 3,
+          size: 6,
+        },
+        {
+          seriesIndex: 1,
+          dataPointIndex: 3,
+          size: 6,
+        },
+      ],
     },
   };
 
