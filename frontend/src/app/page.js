@@ -415,6 +415,8 @@ export default function Home() {
             <Flex
               w="100%"
               gap="2vh"
+              flex="1"
+              align="stretch"
               direction={{
                 base: "column",
                 sm: "column",
@@ -587,9 +589,11 @@ export default function Home() {
                 )}
               </Flex>
             </Flex>
+
             {/* GRAPH + RESULT */}
             <Flex
               w="100%"
+              flex="1"
               direction={{
                 base: "column",
                 sm: "column",
@@ -605,13 +609,14 @@ export default function Home() {
                 minW="0"
                 w="100%"
                 h={"40vh"}
-                minH={{
-                  base: "40vh",
-                  md: "40vh",
-                }}
+                // minH={{
+                //   base: "40vh",
+                //   md: "40vh",
+                // }}
               >
                 <PredictionChart data={predictionData} />
               </Flex>
+
               {/* RESULT */}
               <Flex
                 w={{
@@ -619,10 +624,10 @@ export default function Home() {
                   md: "42%",
                 }}
                 minW="0"
-                minH={{
-                  base: "40vh",
-                  md: "40vh",
-                }}
+                // minH={{
+                //   base: "40vh",
+                //   md: "40vh",
+                // }}
                 direction="column"
                 p="2.5vh"
                 boxShadow={"0 4px 12px rgba(0, 0, 0, 0.2)"}
@@ -662,6 +667,8 @@ export default function Home() {
                     {/* SVR */}
                     <Flex
                       w="100%"
+                      flex="1"
+                      align="center"
                       bg="card.primary"
                       py="2vh"
                       px="1.25vh"
@@ -709,9 +716,12 @@ export default function Home() {
                         </Flex>
                       </Flex>
                     </Flex>
+
                     {/* XGBOOST */}
                     <Flex
                       w="100%"
+                      flex="1"
+                      align="center"
                       bg="card.primary"
                       py="2vh"
                       px="1.25vh"

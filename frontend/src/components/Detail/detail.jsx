@@ -128,10 +128,12 @@ export const MiniCardLocation = ({
   return (
     <Flex
       w={"50%"}
+      minH={"18vh"}
       py={"2vh"}
       px={"2.5vh"}
       borderRadius={"2vh"}
       direction={"column"}
+      justify={"space-between"}
       bg={"bg.secondary"}
       gap={"0.5vh"}
       boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
@@ -152,8 +154,9 @@ export const MiniCardLocation = ({
       <Flex
         justify={"center"}
         align={"center"}
+        flex={"1"}
       >
-        <Stat.Root gap={"1vh"}>
+        <Stat.Root gap={"1vh"} w={"100%"}>
           <HStack justify="center">
             <Stat.ValueText>
               {hasil}{" "}
@@ -166,6 +169,7 @@ export const MiniCardLocation = ({
           <Flex
             justify={"space-between"}
             align={"center"}
+            minH={"3vh"}
           >
             <Stat.HelpText>
               Last Hour
@@ -201,8 +205,10 @@ export const MiniCardLocation = ({
       <Flex
         borderTop={"1px solid #eae9e9"}
         pt={"0.75vh"}
+        minH={"3vh"}
         direction={"row"}
         justify={"space-between"}
+        align={"center"}
         cursor={"pointer"}
         onClick={onSelect}
       >
