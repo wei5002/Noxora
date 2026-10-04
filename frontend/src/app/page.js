@@ -12,6 +12,7 @@ import {
 import { ComboBoxDashboard } from "../components/ComboBox/comboBox";
 import PredictionChart from "../components/Grafik/grafik";
 import { RiCloudWindyFill } from "react-icons/ri";
+import { PopupMini } from "../components/Popup/popup";
 
 export default function Home() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function Home() {
     useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPredictionPopup, setShowPredictionPopup] = useState(false);
   const [currentLocationData, setCurrentLocationData] = useState(null);
   const [allLocations, setAllLocations] = useState([]);
 
@@ -70,8 +72,7 @@ export default function Home() {
 
     // CEK LOGIN
     if (isLoggedIn !== "true") {
-      alert("Silakan login terlebih dahulu untuk melakukan prediksi.");
-      router.push("/Login");
+      setShowPredictionPopup(true);
       return;
     }
 
@@ -834,6 +835,7 @@ export default function Home() {
           </Flex>
         </Flex>
       </Flex>
+
       {/* FOOTER */}
       <Flex
         w="100%"
@@ -860,6 +862,20 @@ export default function Home() {
           © 2026 Shirley 535230024. All rights reserved.
         </Text>
       </Flex>
+
+      {showPredictionPopup && (
+        <PopupMini
+          title="Prediction"
+          message="Silakan login terlebih dahulu untuk melakukan prediksi."
+          button1="Batal"
+          button2="Login"
+          onClick1={() => setShowPredictionPopup(false)}
+          onClick2={() => {
+            setShowPredictionPopup(false);
+            router.push("/Login");
+          }}
+        />
+      )}
     </Flex>
   );
 }

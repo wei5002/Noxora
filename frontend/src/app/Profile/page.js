@@ -3,17 +3,29 @@
 import { Avatar, Button, Flex, Input, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { PopupMini } from "../../components/Popup/popup";
+import { PopupMini, PopupMini2 } from "../../components/Popup/popup";
 
 export default function Profile() {
   const router = useRouter();
 
   const [isEditing, setIsEditing] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [showMessagePopup, setShowMessagePopup] = useState(false);
+
+  const [popupTitle, setPopupTitle] = useState("");
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupAction, setPopupAction] = useState(() => () => {});
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [telp, setTelp] = useState("");
+
+  const showMessage = (title, message, action = () => {}) => {
+    setPopupTitle(title);
+    setPopupMessage(message);
+    setPopupAction(() => action);
+    setShowMessagePopup(true);
+  };
 
   // GET PROFILE
   useEffect(() => {
@@ -35,7 +47,10 @@ export default function Profile() {
         const data = await response.json();
 
         if (!response.ok) {
-          alert(data.message || "Gagal mengambil data profile.");
+          showMessage(
+            "Profile",
+            data.message || "Gagal mengambil data profile.",
+          );
           return;
         }
 
@@ -47,7 +62,8 @@ export default function Profile() {
         localStorage.setItem("user", JSON.stringify(data.user));
       } catch (error) {
         console.error("Error:", error);
-        alert("Tidak dapat terhubung ke server.");
+
+        showMessage("Profile", "Tidak dapat terhubung ke server.");
       }
     };
 
@@ -64,7 +80,9 @@ export default function Profile() {
 
     if (!storedUser) {
       setShowDeletePopup(false);
-      alert("Data akun tidak ditemukan.");
+
+      showMessage("Delete Account", "Data akun tidak ditemukan.");
+
       return;
     }
 
@@ -82,7 +100,9 @@ export default function Profile() {
 
       if (!response.ok) {
         setShowDeletePopup(false);
-        alert(data.message || "Gagal menghapus akun.");
+
+        showMessage("Delete Account", data.message || "Gagal menghapus akun.");
+
         return;
       }
 
@@ -95,15 +115,15 @@ export default function Profile() {
 
       setShowDeletePopup(false);
 
-      alert("Akun berhasil dihapus.");
-
-      router.push("/Login");
+      showMessage("Delete Account", "Akun berhasil dihapus.", () => {
+        router.push("/Login");
+      });
     } catch (error) {
       console.error("Error:", error);
 
       setShowDeletePopup(false);
 
-      alert("Tidak dapat terhubung ke server.");
+      showMessage("Delete Account", "Tidak dapat terhubung ke server.");
     }
   };
 
@@ -118,7 +138,8 @@ export default function Profile() {
     const storedUser = localStorage.getItem("user");
 
     if (!storedUser) {
-      alert("Data akun tidak ditemukan.");
+      showMessage("Profile", "Data akun tidak ditemukan.");
+
       return;
     }
 
@@ -131,31 +152,36 @@ export default function Profile() {
 
     // VALIDASI USERNAME
     if (!normalizedUsername) {
-      alert("Username wajib diisi.");
+      showMessage("Profile", "Username wajib diisi.");
+
       return;
     }
 
     if (normalizedUsername.length < 6) {
-      alert("Username minimal 6 karakter.");
+      showMessage("Profile", "Username minimal 6 karakter.");
+
       return;
     }
 
     // VALIDASI EMAIL
     if (!normalizedEmail) {
-      alert("Email wajib diisi.");
+      showMessage("Profile", "Email wajib diisi.");
+
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(normalizedEmail)) {
-      alert("Format email tidak valid.");
+      showMessage("Profile", "Format email tidak valid.");
+
       return;
     }
 
     // VALIDASI NOMOR TELEPON
     if (normalizedTelp && !/^\d+$/.test(normalizedTelp)) {
-      alert("Nomor telepon hanya boleh berisi angka.");
+      showMessage("Profile", "Nomor telepon hanya boleh berisi angka.");
+
       return;
     }
 
@@ -178,7 +204,8 @@ export default function Profile() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || "Gagal memperbarui profile.");
+        showMessage("Profile", data.message || "Gagal memperbarui profile.");
+
         return;
       }
 
@@ -194,10 +221,11 @@ export default function Profile() {
 
       setIsEditing(false);
 
-      alert("Profile berhasil diperbarui.");
+      showMessage("Profile", "Profile berhasil diperbarui.");
     } catch (error) {
       console.error("Error:", error);
-      alert("Tidak dapat terhubung ke server.");
+
+      showMessage("Profile", "Tidak dapat terhubung ke server.");
     }
   };
 
@@ -390,6 +418,7 @@ export default function Profile() {
           </Button>
         </Flex>
       </Flex>
+
       {showDeletePopup && (
         <PopupMini
           title="Delete Account"
@@ -398,6 +427,18 @@ export default function Profile() {
           onClick2={confirmDeleteAccount}
           button1="Cancel"
           button2="Delete"
+        />
+      )}
+
+      {showMessagePopup && (
+        <PopupMini2
+          title={popupTitle}
+          message={popupMessage}
+          button1="OK"
+          onClick1={() => {
+            setShowMessagePopup(false);
+            popupAction();
+          }}
         />
       )}
     </Flex>

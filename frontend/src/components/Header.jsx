@@ -129,7 +129,7 @@ export default function Header() {
     setIsLoggedIn(false);
     setShowLogoutPopup(false);
 
-    router.push("/");
+    router.push("/Login");
   };
 
   // INSTALL PWA

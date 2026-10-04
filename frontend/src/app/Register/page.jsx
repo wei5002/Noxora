@@ -4,8 +4,9 @@ import { Button, Flex, Input, Text } from "@chakra-ui/react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PopupMini } from "../../components/Popup/popup";
 
-export default function Profile() {
+export default function Register() {
   const router = useRouter();
 
   const [username, setUsername] = useState("");
@@ -13,46 +14,73 @@ export default function Profile() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-const handleSignUp = async () => {
-  if (!username || !email || !password || !confirmPassword) {
-    alert("Semua data harus diisi.");
-    return;
-  }
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupTitle, setPopupTitle] = useState("");
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupAction, setPopupAction] = useState(() => () => {});
 
-  if (password !== confirmPassword) {
-    alert("Password dan Confirm Password tidak sama.");
-    return;
-  }
+  const showMessage = (title, message, action = () => {}) => {
+    setPopupTitle(title);
+    setPopupMessage(message);
+    setPopupAction(() => action);
+    setShowPopup(true);
+  };
 
-  try {
-    const response = await fetch("http://localhost:5000/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username,
-        email,
-        password,
-        confirmPassword,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      alert(data.message || "Registrasi gagal.");
+  const handleSignUp = async () => {
+    if (!username || !email || !password || !confirmPassword) {
+      showMessage("Sign Up", "Semua data harus diisi.");
       return;
     }
 
-    alert("Sign Up berhasil!");
+    if (password !== confirmPassword) {
+      showMessage(
+        "Sign Up",
+        "Password dan Confirm Password tidak sama.",
+      );
+      return;
+    }
 
-    router.push("/Login");
-  } catch (error) {
-    console.error("Error:", error);
-    alert("Tidak dapat terhubung ke server.");
-  }
-};
+    try {
+      const response = await fetch("http://localhost:5000/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username,
+          email,
+          password,
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showMessage(
+          "Sign Up",
+          data.message || "Registrasi gagal.",
+        );
+        return;
+      }
+
+      showMessage(
+        "Sign Up Berhasil",
+        "Akun berhasil dibuat. Silakan login untuk melanjutkan.",
+        () => {
+          router.push("/Login");
+        },
+      );
+    } catch (error) {
+      console.error("Error:", error);
+
+      showMessage(
+        "Sign Up",
+        "Tidak dapat terhubung ke server.",
+      );
+    }
+  };
+
   return (
     <Flex w="100%" minH="100vh" justify="center" align="center">
       <Flex
@@ -64,12 +92,14 @@ const handleSignUp = async () => {
         direction={"column"}
         gap={"2vh"}
         borderRadius={"2vh"}
-        justify={"center"}>
+        justify={"center"}
+      >
         <Flex
           w={"100%"}
           justify={"center"}
           borderBottom={"1px solid #dfdddd"}
-          pb={"0.5vh"}>
+          pb={"0.5vh"}
+        >
           <Text fontWeight={"bold"} fontSize={"xl"}>
             Signup
           </Text>
@@ -122,7 +152,9 @@ const handleSignUp = async () => {
 
         {/* Confirm Password */}
         <Flex direction={{ base: "column", sm: "row" }} align={"center"}>
-          <Text w={{ base: "100%", sm: "29vh" }}>Confirm Password</Text>
+          <Text w={{ base: "100%", sm: "29vh" }}>
+            Confirm Password
+          </Text>
 
           <PasswordInput
             h={"4vh"}
@@ -143,11 +175,28 @@ const handleSignUp = async () => {
             bg={"button.primary"}
             _hover={{ bg: "hover.primary" }}
             borderRadius={"4vh"}
-            onClick={handleSignUp}>
+            onClick={handleSignUp}
+          >
             Sign Up
           </Button>
         </Flex>
       </Flex>
+
+      {showPopup && (
+        <PopupMini
+          title={popupTitle}
+          message={popupMessage}
+          button1="OK"
+          button2=""
+          onClick1={() => {
+            setShowPopup(false);
+            popupAction();
+          }}
+          onClick2={() => {
+            setShowPopup(false);
+          }}
+        />
+      )}
     </Flex>
   );
 }

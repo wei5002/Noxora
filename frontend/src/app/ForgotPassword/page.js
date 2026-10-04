@@ -3,17 +3,26 @@
 import { Button, Flex, Input, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PopupMini2 } from "../../components/Popup/popup";
 
 export default function ForgotPassword() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [showPopup, setShowPopup] = useState(false);
+  const [popupTitle, setPopupTitle] = useState("");
+  const [popupMessage, setPopupMessage] = useState("");
+
+  const showMessage = (title, message) => {
+    setPopupTitle(title);
+    setPopupMessage(message);
+    setShowPopup(true);
+  };
 
   const handleForgotPassword = async () => {
     // Cek email
     if (!email) {
-      alert("Silakan masukkan email Anda.");
+      showMessage("Forgot Password", "Silakan masukkan email Anda.");
       return;
     }
 
@@ -21,7 +30,7 @@ export default function ForgotPassword() {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!emailRegex.test(email)) {
-      alert("Format email tidak valid.");
+      showMessage("Forgot Password", "Format email tidak valid.");
       return;
     }
 
@@ -39,16 +48,22 @@ export default function ForgotPassword() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || "Gagal mengirim reset password.");
+        showMessage(
+          "Forgot Password",
+          data.message || "Gagal mengirim reset password.",
+        );
         return;
       }
 
       // Tampilkan popup
-      setShowPopup(true);
+      showMessage(
+        "Email Terkirim",
+        "Silakan cek email Anda untuk mendapatkan link reset password.",
+      );
     } catch (error) {
       console.error("Error:", error);
 
-      alert("Tidak dapat terhubung ke server.");
+      showMessage("Forgot Password", "Tidak dapat terhubung ke server.");
     }
   };
 
@@ -125,48 +140,18 @@ export default function ForgotPassword() {
 
       {/* POPUP */}
       {showPopup && (
-        <Flex
-          position="fixed"
-          inset="0"
-          bg="rgba(0, 0, 0, 0.5)"
-          justify="center"
-          align="center"
-          zIndex="9999"
-          onClick={() => setShowPopup(false)}
-        >
-          <Flex
-            bg="bg.secondary"
-            w={{ base: "85%", md: "40%", lg: "30%" }}
-            p="4vh"
-            borderRadius="2vh"
-            direction="column"
-            align="center"
-            gap="2vh"
-            boxShadow="0 4px 12px rgba(0, 0, 0, 0.3)"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Text fontSize="xl" fontWeight="bold" color="text.primary">
-              Email Terkirim
-            </Text>
+        <PopupMini2
+          title={popupTitle}
+          message={popupMessage}
+          button1="OK"
+          onClick1={() => {
+            setShowPopup(false);
 
-            <Text textAlign="center" fontSize="sm" color="text.thrid">
-              Silakan cek email Anda untuk mendapatkan link reset password.
-            </Text>
-
-            <Button
-              w="15vh"
-              bg="button.primary"
-              borderRadius="4vh"
-              fontWeight="bold"
-              onClick={() => router.push("/Login")}
-              _hover={{
-                bg: "hover.primary",
-              }}
-            >
-              OK
-            </Button>
-          </Flex>
-        </Flex>
+            if (popupTitle === "Email Terkirim") {
+              router.push("/Login");
+            }
+          }}
+        />
       )}
     </Flex>
   );

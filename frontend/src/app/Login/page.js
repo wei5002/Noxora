@@ -4,12 +4,15 @@ import { Button, Flex, Input, Text } from "@chakra-ui/react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {  PopupMini2 } from "../../components/Popup/popup";
+// import { PopupMini } from "../components/Popup/popup";
 
 export default function Login() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showLoginPopup, setShowLoginPopup] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -42,9 +45,7 @@ export default function Login() {
 
       window.dispatchEvent(new Event("login"));
 
-      alert("Login berhasil!");
-
-      router.push("/");
+      setShowLoginPopup(true);
     } catch (error) {
       console.error("Error:", error);
       alert("Tidak dapat terhubung ke server.");
@@ -152,10 +153,12 @@ export default function Login() {
           >
             Login
           </Button>
+
           <Flex direction="row" gap={"1"}>
             <Text fontSize={"xs"} color={"text.thrid"}>
               Don&apos;t have an account?
             </Text>
+
             <Text
               fontSize="xs"
               color="text.fouth"
@@ -170,6 +173,18 @@ export default function Login() {
           </Flex>
         </Flex>
       </Flex>
+
+      {showLoginPopup && (
+        <PopupMini2
+          title="Login Berhasil"
+          message="Login berhasil! Selamat datang di Noxora."
+          button1="OK"
+          onClick1={() => {
+            setShowLoginPopup(false);
+            router.push("/");
+          }}
+        />
+      )}
     </Flex>
   );
 }

@@ -4,34 +4,50 @@ import { Button, Flex, Text } from "@chakra-ui/react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { PopupMini2 } from "../../components/Popup/popup";
 
 export default function ChangePassword() {
   const router = useRouter();
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupTitle, setPopupTitle] = useState("");
+  const [popupMessage, setPopupMessage] = useState("");
+  const [popupButton1, setPopupButton1] = useState("OK");
+  const [popupButton2, setPopupButton2] = useState("");
+  const [popupAction, setPopupAction] = useState(() => () => {});
+
+  const showMessage = (title, message, action = () => {}) => {
+    setPopupTitle(title);
+    setPopupMessage(message);
+    setPopupButton1("OK");
+    setPopupButton2("");
+    setPopupAction(() => action);
+    setShowPopup(true);
+  };
 
   const handleChangePassword = async () => {
     const params = new URLSearchParams(window.location.search);
     const resetToken = params.get("token");
 
     if (!newPassword) {
-      alert("Password baru harus diisi.");
+      showMessage("Change Password", "Password baru harus diisi.");
       return;
     }
 
     if (newPassword.length < 8) {
-      alert("Password baru minimal 8 karakter.");
+      showMessage("Change Password", "Password baru minimal 8 karakter.");
       return;
     }
 
     if (!confirmPassword) {
-      alert("Confirm new password harus diisi.");
+      showMessage("Change Password", "Confirm new password harus diisi.");
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      alert("Confirm new password tidak sama.");
+      showMessage("Change Password", "Confirm new password tidak sama.");
       return;
     }
 
@@ -58,9 +74,14 @@ export default function ChangePassword() {
         const storedUser = localStorage.getItem("user");
 
         if (!storedUser) {
-          alert("Akun tidak ditemukan. Silakan login terlebih dahulu.");
+          showMessage(
+            "Change Password",
+            "Akun tidak ditemukan. Silakan login terlebih dahulu.",
+            () => {
+              router.push("/Login");
+            },
+          );
 
-          router.push("/Login");
           return;
         }
 
@@ -84,17 +105,20 @@ export default function ChangePassword() {
       const data = await response.json();
 
       if (!response.ok) {
-        alert(data.message || "Gagal mengubah password.");
+        showMessage(
+          "Change Password",
+          data.message || "Gagal mengubah password.",
+        );
         return;
       }
 
-      alert("Password berhasil diubah.");
-
-      router.push("/Login");
+      showMessage("Change Password", "Password berhasil diubah.", () => {
+        router.push("/Login");
+      });
     } catch (error) {
       console.error("Change Password Error:", error);
 
-      alert("Tidak dapat terhubung ke server.");
+      showMessage("Change Password", "Tidak dapat terhubung ke server.");
     }
   };
 
@@ -195,6 +219,22 @@ export default function ChangePassword() {
           </Flex>
         </Flex>
       </Flex>
+
+      {showPopup && (
+        <PopupMini2
+          title={popupTitle}
+          message={popupMessage}
+          button1={popupButton1}
+          button2={popupButton2}
+          onClick1={() => {
+            setShowPopup(false);
+            popupAction();
+          }}
+          onClick2={() => {
+            setShowPopup(false);
+          }}
+        />
+      )}
     </Flex>
   );
 }
